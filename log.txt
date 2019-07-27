@@ -1,5 +1,0 @@
-2019/07/26 20:40:29 Init complete
-2019/07/26 20:40:29 Starting main routine
-2019/07/26 20:40:29 RobocraftX Install Path: 
-2019/07/26 20:40:29 /mnt/b3b48925-0904-4015-82ce-64f70ad8df41/SteamLib/steamapps/common/RobocraftX
-2019/07/26 20:40:29 rxsm terminated

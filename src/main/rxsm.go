@@ -13,6 +13,7 @@ import (
   "log"
   //"fmt"
 
+  "./display"
   "./saver"
 )
 
@@ -60,6 +61,7 @@ func main() {
   config.Save()
   log.Println("RobocraftX Install Path: "+config.BasePath)
   saveHandler := saver.NewSaveHandler(config.BasePath)
+  display.Run(saveHandler)
   log.Println("rxsm terminated")
 }
 

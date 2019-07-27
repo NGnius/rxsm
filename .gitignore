@@ -13,3 +13,7 @@
 
 # test binaries
 bin/**
+
+# logs
+log.txt
+**.log
