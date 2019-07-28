@@ -3,108 +3,207 @@
 package display
 
 import (
-	//"fyne.io/fyne"
-	"fyne.io/fyne/widget"
-	"fyne.io/fyne/app"
-	//"strconv"
+	"strconv"
 	"log"
-	//"strings"
+	"strings"
+	"os"
+	"bufio"
 
   "../saver"
 )
 
 var (
-	Width int = 640
-	Height int = 480
-	savesSelector widget.Select
 	activeSaveHandler saver.SaveHandler
-	saveGroup widget.Group
-	gameIdEntry *widget.Entry = widget.NewEntry()
-	gameNameEntry *widget.Entry = widget.NewEntry()
-	gameDescriptionEntry *widget.Entry = widget.NewMultiLineEntry()
-	gameCreatorEntry *widget.Entry = widget.NewEntry()
-	gameId widget.FormItem = widget.FormItem{Text:"Game Name", Widget:gameIdEntry}
-	gameName widget.FormItem = widget.FormItem{Text:"Game Name", Widget:gameNameEntry}
-	gameDescription widget.FormItem = widget.FormItem{Text:"Game Name", Widget:gameDescriptionEntry}
-	gameCreator widget.FormItem = widget.FormItem{Text:"Game Name", Widget:gameCreatorEntry}
-	saveChangesButton *widget.Button = widget.NewButton("Save Changes", onSaveButtonClick)
+	selectedSave saver.Save
 )
 
-func Run(saveHandler saver.SaveHandler) {
-	activeSaveHandler = saveHandler
-	app := app.New()
-
-	savesSelector := widget.NewSelect(
-		makeSelectorOptions(saveHandler.BuildSaves),
-		onSelectionChange)
-
-	dataForm := widget.NewForm(&gameId, &gameName, &gameDescription)
-
-	saveGroup := widget.NewGroup("Save", savesSelector, dataForm, saveChangesButton)
-
-	w := app.NewWindow("rxsm")
-	w.SetContent(widget.NewVBox(
-		saveGroup,
-		widget.NewButton("Quit", func() {
-			app.Quit()
-		}),
-	))
-
-	//w.Resize(fyne.NewSize(Width, Height))
-	w.ShowAndRun()
+// start Display
+type IDisplayGoroutine interface {
+	Run()
+	Start()
+	Join() (int, error)
 }
 
-// start UI interaction events
-func onSelectionChange(selectedOption string) {
-	log.Println("Selector changed to: "+selectedOption)
+type Display struct {
+	selectedSave saver.Save
+	activeSave saver.Save
+	saveHandler saver.SaveHandler
+	endChan chan int
+	tempText string
+	tempedText string
+	prependText string
+	prependedText string
+	currentText string
 }
 
-func onSaveButtonClick() {
-	// save changes to GameData
-	save, ok := getSelectedSave(savesSelector.Selected)
-	if !ok { // nothing (or invalid item) is selected
+func NewDisplay(saveHandler saver.SaveHandler) (*Display){
+	log.Println(saveHandler.PlaySaves)
+	newD := Display {endChan: make(chan int), saveHandler:saveHandler}
+	// set to invalid Id
+	newD.selectedSave.Data.Id = -1
+	newD.activeSave = saveHandler.ActiveBuildSave()
+	return &newD
+}
+
+func (d *Display) Run() {
+	log.Println("Display started")
+	// build initial display
+	d.prependText = "rxsm (RobocraftX Save Manager) -- pre-alpha v0.0.1\nTest/Dev command line version\nCommands: select #, activate, new, exit\n"
+	newText := makeSelectorDisplayString(makeSelectorOptions(d.saveHandler.BuildSaves), d.selectedSave.Data.Name, d.activeSave.Data.Name)
+	d.overwrite(newText)
+	cliReader := bufio.NewReader(os.Stdin)
+	log.Println("Entering Display input loop")
+	inputLoop: for {
+		text, _ := cliReader.ReadString('\n')
+		text = text[:len(text)-1]
+		args := strings.Split(text, " ")
+		switch args[0] {
+		case "exit", "end":
+			break inputLoop
+		case "select":
+			if len(args) > 1 {
+				i, convErr := strconv.Atoi(args[1])
+				if convErr == nil {
+					i = i-1 // zero-indexed, but displayed as one-indexed
+					if i < len(d.saveHandler.BuildSaves) && i > -1 {
+						d.selectedSave = d.saveHandler.BuildSaves[i]
+						log.Println(strconv.Itoa(i)+" selected")
+					} else {
+						d.tempText = "? Invalid"
+					}
+				}
+			}
+		case "activate":
+			log.Println("Activating id: "+strconv.Itoa(d.selectedSave.Data.Id))
+			if d.selectedSave.Data.Id == -1 {
+				d.tempText = "? Please select a save first"
+			} else {
+				moveSaveToFirst(d.selectedSave, d.saveHandler.BuildSaves)
+				d.activeSave = d.selectedSave
+			}
+		case "new":
+			log.Println("Creating new build save")
+			newId := d.saveHandler.MaxId()+1
+			savePath := d.saveHandler.BuildSaveFolderPath(newId)
+			log.Println("Creating new save in "+savePath)
+			newSave, newSaveErr := saver.NewNewSave(savePath, newId)
+			if newSaveErr != nil {
+				log.Println("Error during 'new' command")
+				log.Println(newSaveErr)
+			}
+			d.selectedSave = newSave
+			d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, d.selectedSave)
+		case "help", "?":
+			d.tempText = "Read the line right below this one ya big doofus :P"
+		}
+		d.overwrite(makeSelectorDisplayString(makeSelectorOptions(d.saveHandler.BuildSaves), d.selectedSave.Data.Name, d.activeSave.Data.Name))
+	}
+	log.Println("Display ended")
+	d.endChan <- 0
+}
+
+func (d *Display) Start() {
+	go d.Run()
+}
+
+func (d *Display) Join() (int, error) {
+	return <- d.endChan, nil
+}
+
+func (d *Display) write(s string) (err error) {
+	d.currentText += s
+	_, err = os.Stdout.Write([]byte(s))
+	return
+}
+
+func (d *Display) overwrite(s string) (err error) {
+	d.clear(99, 99)
+	d.currentText = ""
+	if d.tempText != "" {
+		err = d.write(d.tempText+"\n")
+		if err != nil {
+			return
+		}
+		d.tempedText = d.tempText+"\n"
+		d.tempText = ""
+	} else {
+		d.tempedText = ""
+	}
+	err = d.write(d.prependText)
+	if err != nil {
 		return
 	}
-	//save.Data.Id = gameId.Text
-	save.Data.Name = gameNameEntry.Text
-	save.Data.Description = gameDescriptionEntry.Text
-	save.Data.Creator = gameCreatorEntry.Text
-	saveErr := save.Data.Save()
-	if saveErr != nil {
-		log.Println("Error while saving: ")
-		log.Println(saveErr)
-	}
+	d.prependedText = d.prependText
+	err = d.write(s)
+	return
 }
-// end UI events
 
+func (d *Display) refresh() (err error) {
+	err = d.overwrite(d.currentText[len(d.prependedText)+len(d.tempedText):])
+	return
+}
+
+func (d *Display) clear(lines int, chars int) (err error) {
+	d.write("\033[0;0H")
+	//return
+	i:=0
+	loop: for {
+		if i == lines {
+			break loop
+		}
+		j:=0
+		internalLoop: for {
+			if j == chars {
+				break internalLoop
+			}
+			d.write(" ")
+			j++
+		}
+		d.write("\n")
+		i++
+	}
+	d.write("\033[0;0H")
+	d.currentText = ""
+	return
+}
+
+// end Display
 
 func makeSelectorOptions(saves []saver.Save) ([]string) {
 	var result []string
 	for _, s := range saves {
 		result = append(result, s.Data.Name)
 	}
-	log.Println(result)
 	return result
 }
 
-func moveSaveToFirst(selected string, saves []saver.Save) (ok bool) {
+func makeSelectorDisplayString(options []string, selected string, active string) (result string) {
+	for i, opt := range options {
+		result += strconv.Itoa(i+1)+". "+opt // zero-indexed, but displayed as one-indexed
+		if opt == selected {
+			result += " (selected)"
+		}
+		if opt == active {
+			result += " (active)"
+		}
+		result += "\n"
+	}
+	return
+}
+
+func moveSaveToFirst(selected saver.Save, saves []saver.Save) {
 	for _, s := range saves {
 		err := s.MoveOut()
 		if err != nil {
 			log.Println(err)
 		}
 	}
-	save, ok := getSelectedSave(selected)
-	if !ok {
-		log.Println("Failed to find selected save!")
-		return false
-	}
-	save.MoveToFirst()
-	return true
+	selected.MoveToFirst()
 }
 
 func getSelectedSave(name string) (save saver.Save, isFound bool){
 	var noResult saver.Save
+	noResult.Data.Id = -1
 	for _, s := range activeSaveHandler.BuildSaves {
 		if s.Data.Name == name {
 			return s, true

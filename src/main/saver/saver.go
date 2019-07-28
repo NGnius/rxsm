@@ -5,15 +5,16 @@ package saver
 import (
   "os"
   "io/ioutil"
+  "io"
   "path/filepath"
   "encoding/json"
   "strconv"
-  //"log"
+  "log"
 )
 
 const (
   Games = "RobocraftX_Data/StreamingAssets/Games"
-  Play = "FreeJam"
+  Play = "Freejam"
   Build = "Player"
   GameStart = "Game_"
 
@@ -25,6 +26,8 @@ const (
 var (
   ForceGameCreator = false
   ForceGameCreatorTo = ""
+  DefaultSaveFolder = "resources/default_save"
+  TempNewSaveFolder = "tempsave"
 )
 
 // start of SaveHandler
@@ -55,9 +58,45 @@ func (sv SaveHandler) getSaves(saveFolder string) ([]Save){
     s, sErr := NewSave(folder)
     if sErr == nil {
       saves = append(saves, s)
+    } else {
+      log.Println(sErr)
     }
   }
   return saves
+}
+
+func (sv SaveHandler) PlaySaveFolderPath(id int) (string) {
+ return filepath.Join(sv.installPath, Games, Play, GameStart+doubleDigitStr(id))
+}
+
+func (sv SaveHandler) BuildSaveFolderPath(id int) (string) {
+  return filepath.Join(sv.installPath, Games, Build, GameStart+doubleDigitStr(id))
+}
+
+func (sv SaveHandler) MaxId() (max int) {
+  max = -1
+  for _, save := range sv.BuildSaves {
+    if max < save.Data.Id {
+      max = save.Data.Id
+    }
+  }
+  for _, save := range sv.PlaySaves {
+    if max < save.Data.Id {
+      max = save.Data.Id
+    }
+  }
+  log.Println("Max id found: "+strconv.Itoa(max))
+  return
+}
+
+func (sv SaveHandler) ActiveBuildSave() (as Save) {
+  as.Data.Id = -1
+  for _, save := range sv.BuildSaves {
+    if save.folder == sv.BuildSaveFolderPath(0) {
+      as = save
+    }
+  }
+  return
 }
 // end of SaveHandler
 
@@ -82,6 +121,48 @@ func NewSave(folder string) (Save, error) {
     return newSave, gdErr
   }
   return newSave, nil
+}
+
+func NewNewSave(folder string, id int) (newSave Save, err error) {
+  // duplicate default save
+  stat, statErr := os.Stat(folder)
+  if statErr != nil || os.IsNotExist(statErr) {
+    err = os.MkdirAll(folder, os.ModeDir|os.ModePerm)
+    if err != nil {
+      return
+    }
+  }
+  if statErr == nil && !stat.IsDir() {
+    log.Println("temp dir exists but is not folder, NewNewSave may fail with no error")
+  }
+  toDuplicate := [][]string { // { {source, dest}, ...}
+    []string {filepath.Join(DefaultSaveFolder, GameDataFile), filepath.Join(folder, GameDataFile)},
+    []string {filepath.Join(DefaultSaveFolder, GameSaveFile), filepath.Join(folder, GameSaveFile)},
+    []string {filepath.Join(DefaultSaveFolder, ThumbnailFile), filepath.Join(folder, ThumbnailFile)}}
+  for _, dupPair := range toDuplicate {
+    src, openErr := os.Open(dupPair[0])
+    if openErr != nil {
+      return newSave, openErr
+    }
+    dst, openErr := os.Create(dupPair[1])
+    if openErr != nil {
+      return newSave, openErr
+    }
+    _, err = io.Copy(dst, src)
+    if err != nil {
+      return
+    }
+    dst.Sync()
+    dst.Close()
+  }
+  // load copied save
+  newSave, err = NewSave(folder)
+  if err != nil {
+    return
+  }
+  newSave.Data.Id = id
+  err = newSave.Data.Save()
+  return
 }
 
 func (s *Save) Move(to string) (error) {
@@ -186,10 +267,14 @@ func getFoldersInFolder(dirpath string) []string {
   var folders []string
   dir, dirErr := os.Open(dirpath)
   if dirErr != nil {
+    log.Println("File error in getFoldersInFolder")
+    log.Println(dirErr)
     return folders
   }
   paths, readErr := dir.Readdirnames(0)
   if readErr != nil {
+    log.Println("Read error in getFoldersInFolder")
+    log.Println(readErr)
     return folders
   }
   for _, path := range paths {
