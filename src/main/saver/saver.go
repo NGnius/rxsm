@@ -13,7 +13,6 @@ import (
 )
 
 const (
-  Games = "RobocraftX_Data/StreamingAssets/Games"
   Play = "Freejam"
   Build = "Player"
   GameStart = "Game_"
@@ -24,6 +23,7 @@ const (
 )
 
 var (
+  Games = filepath.FromSlash("RobocraftX_Data/StreamingAssets/Games")
   ForceGameCreator = false
   ForceGameCreatorTo = ""
   DefaultSaveFolder = "resources/default_save"

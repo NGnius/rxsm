@@ -56,7 +56,10 @@ func (d *Display) Run() {
 	inputLoop: for {
 		text, _ := cliReader.ReadString('\n')
 		text = text[:len(text)-1]
+		text = strings.Trim(text, " \n\t\r")
 		args := strings.Split(text, " ")
+		log.Println("stdin: '"+text+"'")
+		log.Println(len(args))
 		switch args[0] {
 		case "exit", "end":
 			break inputLoop
