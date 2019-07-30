@@ -5,9 +5,9 @@ package display
 import (
 	"strconv"
 	"log"
-	"strings"
 	"os"
-	"bufio"
+
+	"github.com/therecipe/qt/widgets"
 
   "../saver"
 )
@@ -25,22 +25,37 @@ type IDisplayGoroutine interface {
 }
 
 type Display struct {
-	selectedSave saver.Save
-	activeSave saver.Save
+	selectedSave *saver.Save
+	activeSave *saver.Save
 	saveHandler saver.SaveHandler
 	endChan chan int
-	tempText string
-	tempedText string
-	prependText string
-	prependedText string
-	currentText string
+	// Qt GUI objects
+	window *widgets.QMainWindow
+	app *widgets.QApplication
+	/* TODO: import and export buttons + functionality
+	importButton *widget.QPushButton2
+	exportButton *widget.QPushButton2
+	*/
+	saveSelector *widgets.QComboBox
+	nameField *widgets.QLineEdit
+	creatorLabel *widgets.QLabel
+	creatorField *widgets.QLineEdit
+	/* TODO: implement thumbnail button + functionality
+	imageLabel *widgets.QPixmap
+	imageButton *widgets.QPushButton
+	*/
+	idLabel *widgets.QLabel
+	descriptionLabel *widgets.QLabel
+	descriptionField *widgets.QPlainTextEdit
+	saveButton *widgets.QPushButton
+	cancelButton *widgets.QPushButton
+	activateButton *widgets.QPushButton
+	moveButton *widgets.QPushButton
 }
 
 func NewDisplay(saveHandler saver.SaveHandler) (*Display){
-	log.Println(saveHandler.PlaySaves)
 	newD := Display {endChan: make(chan int), saveHandler:saveHandler}
 	// set to invalid Id
-	newD.selectedSave.Data.Id = -1
 	newD.activeSave = saveHandler.ActiveBuildSave()
 	return &newD
 }
@@ -48,59 +63,72 @@ func NewDisplay(saveHandler saver.SaveHandler) (*Display){
 func (d *Display) Run() {
 	log.Println("Display started")
 	// build initial display
-	d.prependText = "rxsm (RobocraftX Save Manager) -- pre-alpha v0.0.1\nTest/Dev command line version\nCommands: select #, activate, new, exit\n"
-	newText := makeSelectorDisplayString(makeSelectorOptions(d.saveHandler.BuildSaves), d.selectedSave.Data.Name, d.activeSave.Data.Name)
-	d.overwrite(newText)
-	cliReader := bufio.NewReader(os.Stdin)
-	log.Println("Entering Display input loop")
-	inputLoop: for {
-		text, _ := cliReader.ReadString('\n')
-		text = text[:len(text)-1]
-		text = strings.Trim(text, " \n\t\r")
-		args := strings.Split(text, " ")
-		log.Println("stdin: '"+text+"'")
-		log.Println(len(args))
-		switch args[0] {
-		case "exit", "end":
-			break inputLoop
-		case "select":
-			if len(args) > 1 {
-				i, convErr := strconv.Atoi(args[1])
-				if convErr == nil {
-					i = i-1 // zero-indexed, but displayed as one-indexed
-					if i < len(d.saveHandler.BuildSaves) && i > -1 {
-						d.selectedSave = d.saveHandler.BuildSaves[i]
-						log.Println(strconv.Itoa(i)+" selected")
-					} else {
-						d.tempText = "? Invalid"
-					}
-				}
-			}
-		case "activate":
-			log.Println("Activating id: "+strconv.Itoa(d.selectedSave.Data.Id))
-			if d.selectedSave.Data.Id == -1 {
-				d.tempText = "? Please select a save first"
-			} else {
-				moveSaveToFirst(d.selectedSave, d.saveHandler.BuildSaves)
-				d.activeSave = d.selectedSave
-			}
-		case "new":
-			log.Println("Creating new build save")
-			newId := d.saveHandler.MaxId()+1
-			savePath := d.saveHandler.BuildSaveFolderPath(newId)
-			log.Println("Creating new save in "+savePath)
-			newSave, newSaveErr := saver.NewNewSave(savePath, newId)
-			if newSaveErr != nil {
-				log.Println("Error during 'new' command")
-				log.Println(newSaveErr)
-			}
-			d.selectedSave = newSave
-			d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, d.selectedSave)
-		case "help", "?":
-			d.tempText = "Read the line right below this one ya big doofus :P"
-		}
-		d.overwrite(makeSelectorDisplayString(makeSelectorOptions(d.saveHandler.BuildSaves), d.selectedSave.Data.Name, d.activeSave.Data.Name))
-	}
+	d.app = widgets.NewQApplication(len(os.Args), os.Args)
+
+	// create a window
+	// with a minimum size of 250*200
+	// and sets the title to "Hello Widgets Example"
+	d.window = widgets.NewQMainWindow(nil, 0)
+	d.window.SetMinimumSize2(250, 200)
+	d.window.SetWindowTitle("rxsm")
+
+	d.saveSelector = widgets.NewQComboBox(nil)
+	d.saveSelector.AddItems(makeSelectorOptions(d.saveHandler.BuildSaves))
+	d.saveSelector.ConnectCurrentIndexChanged(d.onSaveSelectedChanged)
+
+	d.nameField = widgets.NewQLineEdit(nil)
+	d.creatorLabel = widgets.NewQLabel2("by", nil, 0)
+	d.creatorField = widgets.NewQLineEdit(nil)
+	d.idLabel = widgets.NewQLabel2("id: ##", nil, 0)
+	d.descriptionLabel = widgets.NewQLabel2("Description:", nil, 0)
+	d.descriptionField = widgets.NewQPlainTextEdit(nil)
+
+	d.saveButton = widgets.NewQPushButton2("save", nil)
+	d.saveButton.ConnectClicked(d.onSaveButtonClicked)
+	d.cancelButton = widgets.NewQPushButton2("cancel", nil)
+	d.cancelButton.ConnectClicked(d.onCancelButtonClicked)
+	d.activateButton = widgets.NewQPushButton2("activate", nil)
+	d.activateButton.ConnectClicked(d.onActivateButtonClicked)
+	d.moveButton = widgets.NewQPushButton2("functional button", nil)
+	d.moveButton.ConnectClicked(d.onMoveToButtonClicked)
+
+	d.selectedSave = &d.saveHandler.BuildSaves[d.saveSelector.CurrentIndex()]
+	d.populateFields()
+
+	headerLayout := widgets.NewQGridLayout2()
+	headerLayout.AddWidget2(d.saveSelector, 0, 0, 0)
+
+	infoLayout := widgets.NewQGridLayout2()
+	infoLayout.AddWidget3(d.nameField, 0, 0, 1, 6, 0)
+	infoLayout.AddWidget2(d.creatorLabel, 1, 0, 0)
+	infoLayout.AddWidget3(d.creatorField, 1, 1, 1, 5, 0)
+
+	descriptionLayout := widgets.NewQGridLayout2()
+	descriptionLayout.AddWidget3(d.descriptionLabel, 0, 0, 1, 5, 0)
+	descriptionLayout.AddWidget2(d.idLabel, 0, 5, 0)
+	descriptionLayout.AddWidget3(d.descriptionField, 1, 0, 1, 6, 0)
+
+	bottomButtons := widgets.NewQGridLayout2()
+	bottomButtons.AddWidget2(d.saveButton, 0, 0, 0)
+	bottomButtons.AddWidget2(d.cancelButton, 0, 1, 0)
+	bottomButtons.AddWidget2(d.activateButton, 1, 0, 0)
+	bottomButtons.AddWidget2(d.moveButton, 1, 1, 0)
+
+	masterLayout := widgets.NewQGridLayout2()
+	masterLayout.AddLayout(headerLayout, 0, 0, 0)
+	masterLayout.AddLayout(infoLayout, 1, 0, 0)
+	masterLayout.AddLayout(descriptionLayout, 2, 0, 0)
+	masterLayout.AddLayout(bottomButtons, 3, 0, 0)
+
+	centralWidget := widgets.NewQWidget(d.window, 0)
+	centralWidget.SetLayout(masterLayout)
+	d.window.SetCentralWidget(centralWidget)
+
+	d.window.Show()
+	// start the main Qt event loop
+	// and block until app.Exit() is called
+	// or the window is closed by the user
+	d.app.Exec()
 	log.Println("Display ended")
 	d.endChan <- 0
 }
@@ -113,61 +141,50 @@ func (d *Display) Join() (int, error) {
 	return <- d.endChan, nil
 }
 
-func (d *Display) write(s string) (err error) {
-	d.currentText += s
-	_, err = os.Stdout.Write([]byte(s))
-	return
+func (d *Display) populateFields() {
+	d.nameField.SetText(d.selectedSave.Data.Name)
+	d.creatorField.SetText(d.selectedSave.Data.Creator)
+	oldIdText := d.idLabel.Text()
+	d.idLabel.SetText(oldIdText[:len(oldIdText)-2]+saver.DoubleDigitStr(d.selectedSave.Data.Id))
+	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
 }
 
-func (d *Display) overwrite(s string) (err error) {
-	d.clear(99, 99)
-	d.currentText = ""
-	if d.tempText != "" {
-		err = d.write(d.tempText+"\n")
-		if err != nil {
-			return
-		}
-		d.tempedText = d.tempText+"\n"
-		d.tempText = ""
-	} else {
-		d.tempedText = ""
-	}
-	err = d.write(d.prependText)
-	if err != nil {
-		return
-	}
-	d.prependedText = d.prependText
-	err = d.write(s)
-	return
+func (d *Display) syncBackFields() {
+	d.selectedSave.Data.Name = d.nameField.Text()
+	d.selectedSave.Data.Creator = d.creatorField.Text()
+	d.selectedSave.Data.Description = d.descriptionField.ToPlainText()
 }
 
-func (d *Display) refresh() (err error) {
-	err = d.overwrite(d.currentText[len(d.prependedText)+len(d.tempedText):])
-	return
+func (d *Display) onSaveSelectedChanged(index int) {
+	d.selectedSave = &d.saveHandler.BuildSaves[index]
+	d.populateFields()
+	log.Println("Selected "+strconv.Itoa(d.selectedSave.Data.Id))
 }
 
-func (d *Display) clear(lines int, chars int) (err error) {
-	d.write("\033[0;0H")
-	//return
-	i:=0
-	loop: for {
-		if i == lines {
-			break loop
-		}
-		j:=0
-		internalLoop: for {
-			if j == chars {
-				break internalLoop
-			}
-			d.write(" ")
-			j++
-		}
-		d.write("\n")
-		i++
+func (d *Display) onSaveButtonClicked(bool) {
+	d.syncBackFields()
+	saveErr := d.selectedSave.Data.Save()
+	if saveErr != nil {
+		log.Println(saveErr)
 	}
-	d.write("\033[0;0H")
-	d.currentText = ""
-	return
+	index := d.saveSelector.CurrentIndex()
+	d.saveSelector.SetItemText(index, makeSelectorOptions(d.saveHandler.BuildSaves)[index])
+	log.Println("Saved "+strconv.Itoa(d.selectedSave.Data.Id))
+}
+
+func (d *Display) onCancelButtonClicked(bool) {
+	d.populateFields()
+	log.Println("Canceled "+strconv.Itoa(d.selectedSave.Data.Id))
+}
+
+func (d *Display) onActivateButtonClicked(bool) {
+	moveSaveToFirst(d.selectedSave, d.saveHandler.BuildSaves)
+	log.Println("Activated "+strconv.Itoa(d.selectedSave.Data.Id))
+}
+
+func (d *Display) onMoveToButtonClicked(bool) {
+	// TODO: implement move to opposite build/play game mode folder
+	log.Println("Move to button clicked (unimplemented) button clicked")
 }
 
 // end Display
@@ -194,14 +211,17 @@ func makeSelectorDisplayString(options []string, selected string, active string)
 	return
 }
 
-func moveSaveToFirst(selected saver.Save, saves []saver.Save) {
+func moveSaveToFirst(selected *saver.Save, saves []saver.Save) {
 	for _, s := range saves {
-		err := s.MoveOut()
+		err := s.MoveToId()
 		if err != nil {
 			log.Println(err)
 		}
 	}
-	selected.MoveToFirst()
+	err := selected.MoveToFirst()
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func getSelectedSave(name string) (save saver.Save, isFound bool){

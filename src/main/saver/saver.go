@@ -66,11 +66,11 @@ func (sv SaveHandler) getSaves(saveFolder string) ([]Save){
 }
 
 func (sv SaveHandler) PlaySaveFolderPath(id int) (string) {
- return filepath.Join(sv.installPath, Games, Play, GameStart+doubleDigitStr(id))
+ return filepath.Join(sv.installPath, Games, Play, GameStart+DoubleDigitStr(id))
 }
 
 func (sv SaveHandler) BuildSaveFolderPath(id int) (string) {
-  return filepath.Join(sv.installPath, Games, Build, GameStart+doubleDigitStr(id))
+  return filepath.Join(sv.installPath, Games, Build, GameStart+DoubleDigitStr(id))
 }
 
 func (sv SaveHandler) MaxId() (max int) {
@@ -85,15 +85,13 @@ func (sv SaveHandler) MaxId() (max int) {
       max = save.Data.Id
     }
   }
-  log.Println("Max id found: "+strconv.Itoa(max))
   return
 }
 
-func (sv SaveHandler) ActiveBuildSave() (as Save) {
-  as.Data.Id = -1
+func (sv SaveHandler) ActiveBuildSave() (as *Save) {
   for _, save := range sv.BuildSaves {
     if save.folder == sv.BuildSaveFolderPath(0) {
-      as = save
+      as = &save
     }
   }
   return
@@ -102,7 +100,7 @@ func (sv SaveHandler) ActiveBuildSave() (as Save) {
 
 // start Save
 type Save struct {
-  Data GameData
+  Data *GameData
   dataPath string
   savePath string
   thumbnailPath string
@@ -180,7 +178,10 @@ func (s *Save) Move(to string) (error) {
 
 func (s *Save) MoveToId() (error) {
   idDir, _ := filepath.Split(s.folder)
-  idDir = filepath.Join(idDir, GameStart+doubleDigitStr(s.Data.Id))
+  idDir = filepath.Join(idDir, GameStart+DoubleDigitStr(s.Data.Id))
+  if idDir == s.folder { // don't move out if already in id spot
+    return nil
+  }
   return s.Move(idDir)
 }
 
@@ -193,8 +194,8 @@ func (s *Save) MoveToFirst() (error) {
 func (s *Save) MoveOut() (error) {
   exists := true
   rootFolder, _ := filepath.Split(s.folder)
-  lastDir := filepath.Join(rootFolder, GameStart+doubleDigitStr(s.Data.Id))
-  if s.folder == lastDir && s.Data.Id != 0 { // don't move out if in zero-th place
+  lastDir := filepath.Join(rootFolder, GameStart+DoubleDigitStr(s.Data.Id))
+  if s.folder == lastDir && s.Data.Id != 0 { // don't move out if already in non-zero place
     return nil
   }
   dirCheckLoop: for {
@@ -205,7 +206,7 @@ func (s *Save) MoveOut() (error) {
     exists = err == nil || os.IsExist(err)
     if exists {
       s.Data.Id += 1
-      lastDir = filepath.Join(rootFolder, GameStart+doubleDigitStr(s.Data.Id))
+      lastDir = filepath.Join(rootFolder, GameStart+DoubleDigitStr(s.Data.Id))
       if s.Data.Id > 9999 { // sanity check
         return err
       }
@@ -225,16 +226,16 @@ type GameData struct { // reference: GameData.json
   isInited bool
 }
 
-func NewGameData(path string) (GameData, error) {
+func NewGameData(path string) (*GameData, error) {
   var gd GameData
   f, openErr := os.Open(path)
   if openErr != nil {
-    return gd, openErr
+    return &gd, openErr
   }
   data, _ := ioutil.ReadAll(f)
   marshErr := json.Unmarshal(data, &gd)
   if marshErr != nil {
-    return gd, marshErr
+    return &gd, marshErr
   }
   // check forced values
   if ForceGameCreator {
@@ -242,10 +243,10 @@ func NewGameData(path string) (GameData, error) {
   }
   gd.path = path
   gd.isInited = true
-  return gd, nil
+  return &gd, nil
 }
 
-func (gd GameData) Save() (error) {
+func (gd *GameData) Save() (error) {
   file, openErr := os.Create(gd.path)
   if openErr != nil {
     return openErr
@@ -287,7 +288,7 @@ func getFoldersInFolder(dirpath string) []string {
   return folders
 }
 
-func doubleDigitStr(id int) string {
+func DoubleDigitStr(id int) string {
   result := strconv.Itoa(id)
   if len(result) == 1 {
     result = "0" + result

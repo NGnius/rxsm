@@ -43,7 +43,7 @@ func init() {
       // support doesn't really matter until SteamPlay or FJ supports MacOS
       log.Fatal("OS detected as macOS (unsupported)")
     } else {
-      log.Println("No default config for OS: "+runtime.GOOS)
+      log.Fatal("No default config for OS: "+runtime.GOOS)
     }
     config.Creator = ConfigCreator
     config.LogPath = ConfigLogPath
