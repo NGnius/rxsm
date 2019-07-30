@@ -1,6 +1,6 @@
 // Created 2019-07-26 by NGnius
 
-package saver
+package main
 
 import (
   "os"

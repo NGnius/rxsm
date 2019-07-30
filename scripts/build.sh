@@ -1,3 +1,3 @@
 #!/bin/bash
 
-go build -o ./bin/rxsm-dev ./src/main/rxsm.go 
+go build -p 8 -o ./bin/rxsm-dev ./src/main/*.go 

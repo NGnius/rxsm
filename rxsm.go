@@ -12,9 +12,6 @@ import (
   "io/ioutil"
   "log"
   //"fmt"
-
-  "./display"
-  "./saver"
 )
 
 const (
@@ -27,7 +24,7 @@ const (
 var configPath string = "config.json"
 var config Config
 
-var activeDisplay display.IDisplayGoroutine
+var activeDisplay IDisplayGoroutine
 
 func init() {
   log.Println("Starting init")
@@ -53,10 +50,10 @@ func init() {
     data, _ := ioutil.ReadAll(file)
     json.Unmarshal(data, &config)
   }
-  saver.ForceGameCreatorTo = config.Creator
-  saver.ForceGameCreator = config.ForceCreator
+  ForceGameCreatorTo = config.Creator
+  ForceGameCreator = config.ForceCreator
   if config.DefaultSaveFolder != "" {
-    saver.DefaultSaveFolder = config.DefaultSaveFolder
+    DefaultSaveFolder = config.DefaultSaveFolder
   }
   f, _ := os.Create(config.LogPath)
   log.Println("Log directed to "+config.LogPath)
@@ -68,8 +65,8 @@ func main() {
   log.Println("Starting main routine")
   config.Save()
   log.Println("RobocraftX Install Path: "+config.BasePath)
-  saveHandler := saver.NewSaveHandler(config.BasePath)
-  activeDisplay = display.NewDisplay(saveHandler)
+  saveHandler := NewSaveHandler(config.BasePath)
+  activeDisplay = NewDisplay(saveHandler)
   activeDisplay.Start()
   activeDisplay.Join()
   log.Println("rxsm terminated")

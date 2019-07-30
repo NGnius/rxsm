@@ -1,6 +1,6 @@
 // Created 2019-07-26 by NGnius
 
-package display
+package main
 
 import (
 	"strconv"
@@ -8,13 +8,11 @@ import (
 	"os"
 
 	"github.com/therecipe/qt/widgets"
-
-  "../saver"
 )
 
 var (
-	activeSaveHandler saver.SaveHandler
-	selectedSave saver.Save
+	activeSaveHandler SaveHandler
+	selectedSave Save
 )
 
 // start Display
@@ -25,9 +23,9 @@ type IDisplayGoroutine interface {
 }
 
 type Display struct {
-	selectedSave *saver.Save
-	activeSave *saver.Save
-	saveHandler saver.SaveHandler
+	selectedSave *Save
+	activeSave *Save
+	saveHandler SaveHandler
 	endChan chan int
 	// Qt GUI objects
 	window *widgets.QMainWindow
@@ -53,7 +51,7 @@ type Display struct {
 	moveButton *widgets.QPushButton
 }
 
-func NewDisplay(saveHandler saver.SaveHandler) (*Display){
+func NewDisplay(saveHandler SaveHandler) (*Display){
 	newD := Display {endChan: make(chan int), saveHandler:saveHandler}
 	// set to invalid Id
 	newD.activeSave = saveHandler.ActiveBuildSave()
@@ -145,7 +143,7 @@ func (d *Display) populateFields() {
 	d.nameField.SetText(d.selectedSave.Data.Name)
 	d.creatorField.SetText(d.selectedSave.Data.Creator)
 	oldIdText := d.idLabel.Text()
-	d.idLabel.SetText(oldIdText[:len(oldIdText)-2]+saver.DoubleDigitStr(d.selectedSave.Data.Id))
+	d.idLabel.SetText(oldIdText[:len(oldIdText)-2]+DoubleDigitStr(d.selectedSave.Data.Id))
 	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
 }
 
@@ -189,7 +187,7 @@ func (d *Display) onMoveToButtonClicked(bool) {
 
 // end Display
 
-func makeSelectorOptions(saves []saver.Save) ([]string) {
+func makeSelectorOptions(saves []Save) ([]string) {
 	var result []string
 	for _, s := range saves {
 		result = append(result, s.Data.Name)
@@ -211,7 +209,7 @@ func makeSelectorDisplayString(options []string, selected string, active string)
 	return
 }
 
-func moveSaveToFirst(selected *saver.Save, saves []saver.Save) {
+func moveSaveToFirst(selected *Save, saves []Save) {
 	for _, s := range saves {
 		err := s.MoveToId()
 		if err != nil {
@@ -224,8 +222,8 @@ func moveSaveToFirst(selected *saver.Save, saves []saver.Save) {
 	}
 }
 
-func getSelectedSave(name string) (save saver.Save, isFound bool){
-	var noResult saver.Save
+func getSelectedSave(name string) (save Save, isFound bool){
+	var noResult Save
 	noResult.Data.Id = -1
 	for _, s := range activeSaveHandler.BuildSaves {
 		if s.Data.Name == name {
