@@ -21,3 +21,6 @@ temp**
 # logs
 log.txt
 **.log
+
+# install stuff
+vendor/**
