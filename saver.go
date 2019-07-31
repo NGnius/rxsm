@@ -13,17 +13,13 @@ import (
 )
 
 const (
-  Play = "Freejam"
-  Build = "Player"
   GameStart = "Game_"
-
   GameDataFile = "GameData.json"
   GameSaveFile = "GameSave.RCX"
   ThumbnailFile = "Thumbnail.jpg"
 )
 
 var (
-  Games = filepath.FromSlash("RobocraftX_Data/StreamingAssets/Games")
   ForceGameCreator = false
   ForceGameCreatorTo = ""
   DefaultSaveFolder = "resources/default_save"
@@ -32,20 +28,16 @@ var (
 
 // start of SaveHandler
 type SaveHandler struct {
-  installPath string
-  gamesPath string
   playPath string
   buildPath string
   PlaySaves []Save
   BuildSaves []Save
 }
 
-func NewSaveHandler(installPath string) (SaveHandler) {
+func NewSaveHandler(playPath string, buildPath string) (SaveHandler) {
   newSaveHandler := SaveHandler {
-    installPath: installPath,
-    gamesPath: filepath.Join(installPath, Games),
-    playPath: filepath.Join(installPath, Games, Play),
-    buildPath: filepath.Join(installPath, Games, Build)}
+    playPath: filepath.FromSlash(playPath),
+    buildPath: filepath.FromSlash(buildPath)}
   newSaveHandler.PlaySaves = newSaveHandler.getSaves(newSaveHandler.playPath)
   newSaveHandler.BuildSaves = newSaveHandler.getSaves(newSaveHandler.buildPath)
   return newSaveHandler
@@ -66,11 +58,11 @@ func (sv SaveHandler) getSaves(saveFolder string) ([]Save){
 }
 
 func (sv SaveHandler) PlaySaveFolderPath(id int) (string) {
- return filepath.Join(sv.installPath, Games, Play, GameStart+DoubleDigitStr(id))
+ return filepath.Join(sv.playPath, GameStart+DoubleDigitStr(id))
 }
 
 func (sv SaveHandler) BuildSaveFolderPath(id int) (string) {
-  return filepath.Join(sv.installPath, Games, Build, GameStart+DoubleDigitStr(id))
+  return filepath.Join(sv.buildPath, GameStart+DoubleDigitStr(id))
 }
 
 func (sv SaveHandler) MaxId() (max int) {

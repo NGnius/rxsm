@@ -17,7 +17,7 @@ import (
 const (
   // config defaults
   ConfigCreator = "unknown"
-  ConfigLogPath = "log.txt"
+  ConfigLogPath = "rxsm.log"
   ConfigSaveFolder = "default_save"
 )
 
@@ -33,9 +33,11 @@ func init() {
   if openErr != nil {
     // no config file found, use default config
     if runtime.GOOS == "windows" {
-      config.BasePath = filepath.FromSlash("C:/Program Files (x86)/Steam/steamapps/common/RobocraftX")
+      config.PlayPath = filepath.FromSlash("%APPDATA%/../LocalLow/Freejam/RobocraftX/Games")
+      config.BuildPath = filepath.FromSlash("C:/Program Files (x86)/Steam/steamapps/common/RobocraftX/RobocraftX_Data/StreamingAssets/Games/Freejam")
     } else if runtime.GOOS == "linux" {
-      config.BasePath = filepath.FromSlash("~/.local/share/Steam/steamapps/common/RobocraftX")
+      config.PlayPath = filepath.FromSlash("~/.local/share/Steam/steamapps/compatdata/1078000/pfx/drive_c/users/steamuser/AppData/LocalLow/Freejam/RobocraftX/Games")
+      config.PlayPath = filepath.FromSlash("~/.local/share/Steam/steamapps/common/RobocraftX/RobocraftX_Data/StreamingAssets/Games/Freejam")
     } else if runtime.GOOS == "darwin" { // macOS
       // support doesn't really matter until SteamPlay or FJ supports MacOS
       log.Fatal("OS detected as macOS (unsupported)")
@@ -64,8 +66,9 @@ func init() {
 func main() {
   log.Println("Starting main routine")
   config.Save()
-  log.Println("RobocraftX Install Path: "+config.BasePath)
-  saveHandler := NewSaveHandler(config.BasePath)
+  log.Println("RobocraftX Play Path: "+config.PlayPath)
+  log.Println("RobocraftX Build Path: "+config.BuildPath)
+  saveHandler := NewSaveHandler(config.PlayPath, config.BuildPath)
   activeDisplay = NewDisplay(saveHandler)
   activeDisplay.Start()
   activeDisplay.Join()
@@ -74,7 +77,8 @@ func main() {
 
 // start of Config
 type Config struct {
-  BasePath string `json:"installPath"`
+  PlayPath string `json:"play-path"`
+  BuildPath string `json:"build-path"`
   Creator string `json:"creator"`
   ForceCreator bool `json:"force-creator?"`
   LogPath string `json:"log"`
