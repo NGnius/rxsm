@@ -35,6 +35,7 @@ type Display struct {
 	exportButton *widget.QPushButton2
 	*/
 	saveSelector *widgets.QComboBox
+	newSaveButton *widgets.QPushButton
 	nameField *widgets.QLineEdit
 	creatorLabel *widgets.QLabel
 	creatorField *widgets.QLineEdit
@@ -65,7 +66,6 @@ func (d *Display) Run() {
 
 	// create a window
 	// with a minimum size of 250*200
-	// and sets the title to "Hello Widgets Example"
 	d.window = widgets.NewQMainWindow(nil, 0)
 	d.window.SetMinimumSize2(250, 200)
 	d.window.SetWindowTitle("rxsm")
@@ -73,6 +73,8 @@ func (d *Display) Run() {
 	d.saveSelector = widgets.NewQComboBox(nil)
 	d.saveSelector.AddItems(makeSelectorOptions(d.saveHandler.BuildSaves))
 	d.saveSelector.ConnectCurrentIndexChanged(d.onSaveSelectedChanged)
+	d.newSaveButton = widgets.NewQPushButton2("new", nil)
+	d.newSaveButton.ConnectClicked(d.onNewSaveButtonClicked)
 
 	d.nameField = widgets.NewQLineEdit(nil)
 	d.creatorLabel = widgets.NewQLabel2("by", nil, 0)
@@ -94,7 +96,8 @@ func (d *Display) Run() {
 	d.populateFields()
 
 	headerLayout := widgets.NewQGridLayout2()
-	headerLayout.AddWidget2(d.saveSelector, 0, 0, 0)
+	headerLayout.AddWidget3(d.saveSelector, 0, 0, 0, 5, 0)
+	headerLayout.AddWidget2(d.newSaveButton, 0, 6, 0)
 
 	infoLayout := widgets.NewQGridLayout2()
 	infoLayout.AddWidget3(d.nameField, 0, 0, 1, 6, 0)
@@ -159,6 +162,22 @@ func (d *Display) onSaveSelectedChanged(index int) {
 	log.Println("Selected "+strconv.Itoa(d.selectedSave.Data.Id))
 }
 
+func (d *Display) onNewSaveButtonClicked(bool) {
+	newId := d.saveHandler.MaxId()
+	newSave, newSaveErr := NewNewSave(d.saveHandler.PlaySaveFolderPath(newId), newId)
+	if newSaveErr != nil {
+		log.Println("Error while creating new save")
+		log.Println(newSaveErr)
+		return
+	}
+	d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, newSave)
+	d.saveSelector.AddItems([]string{newSave.Data.Name})
+	log.Println("Created new save "+strconv.Itoa(newSave.Data.Id))
+	// select newly created save
+	d.saveSelector.SetCurrentIndex(len(d.saveHandler.BuildSaves)-1)
+	d.onSaveSelectedChanged(len(d.saveHandler.BuildSaves)-1)
+}
+
 func (d *Display) onSaveButtonClicked(bool) {
 	d.syncBackFields()
 	saveErr := d.selectedSave.Data.Save()
@@ -193,20 +212,6 @@ func makeSelectorOptions(saves []Save) ([]string) {
 		result = append(result, s.Data.Name)
 	}
 	return result
-}
-
-func makeSelectorDisplayString(options []string, selected string, active string) (result string) {
-	for i, opt := range options {
-		result += strconv.Itoa(i+1)+". "+opt // zero-indexed, but displayed as one-indexed
-		if opt == selected {
-			result += " (selected)"
-		}
-		if opt == active {
-			result += " (active)"
-		}
-		result += "\n"
-	}
-	return
 }
 
 func moveSaveToFirst(selected *Save, saves []Save) {

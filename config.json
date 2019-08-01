@@ -1,8 +1,8 @@
 {
-  "play-path": "/mnt/b3b48925-0904-4015-82ce-64f70ad8df41/SteamLib/steamapps/common/RobocraftX/RobocraftX_Data/StreamingAssets/Games/Freejam",
-  "build-path": "/mnt/b3b48925-0904-4015-82ce-64f70ad8df41/SteamLib/steamapps/compatdata/1078000/pfx/drive_c/users/steamuser/AppData/LocalLow/Freejam/RobocraftX/Games",
+  "play-path": "resources",
+  "build-path": "resources",
   "creator": "unknown",
   "force-creator?": false,
   "log": "log.txt",
-  "copyable-save": "default_save"
+  "copyable-save": "resources/default_save"
 }

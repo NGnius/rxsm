@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./bin/rxsm-dev "$@"
+./deploy/linux/rxsm "$@"
