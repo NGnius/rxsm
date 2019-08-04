@@ -10,6 +10,11 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
+const (
+	BUILD_MODE = 1
+	PLAY_MODE = 2
+)
+
 var (
 	activeSaveHandler SaveHandler
 	selectedSave Save
@@ -25,11 +30,15 @@ type IDisplayGoroutine interface {
 type Display struct {
 	selectedSave *Save
 	activeSave *Save
+	activeMode int
+	activeSaves *[]Save
 	saveHandler SaveHandler
 	endChan chan int
 	// Qt GUI objects
 	window *widgets.QMainWindow
 	app *widgets.QApplication
+	switchModeButton *widgets.QPushButton
+	currentModeLabel *widgets.QLabel
 	/* TODO: import and export buttons + functionality
 	importButton *widget.QPushButton2
 	exportButton *widget.QPushButton2
@@ -54,12 +63,14 @@ type Display struct {
 
 func NewDisplay(saveHandler SaveHandler) (*Display){
 	newD := Display {endChan: make(chan int), saveHandler:saveHandler}
-	// set to invalid Id
 	newD.activeSave = saveHandler.ActiveBuildSave()
 	return &newD
 }
 
 func (d *Display) Run() {
+	d.activeMode = BUILD_MODE
+	d.activeSaves = &d.saveHandler.BuildSaves
+	log.Println(d.saveHandler.PlaySaves)
 	log.Println("Display started")
 	// build initial display
 	d.app = widgets.NewQApplication(len(os.Args), os.Args)
@@ -70,8 +81,12 @@ func (d *Display) Run() {
 	d.window.SetMinimumSize2(250, 200)
 	d.window.SetWindowTitle("rxsm")
 
+	d.switchModeButton = widgets.NewQPushButton2("toggle mode", nil)
+	d.switchModeButton.ConnectClicked(d.onModeButtonClicked)
+	d.currentModeLabel = widgets.NewQLabel2("build", nil, 0)
+
 	d.saveSelector = widgets.NewQComboBox(nil)
-	d.saveSelector.AddItems(makeSelectorOptions(d.saveHandler.BuildSaves))
+	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
 	d.saveSelector.ConnectCurrentIndexChanged(d.onSaveSelectedChanged)
 	d.newSaveButton = widgets.NewQPushButton2("new", nil)
 	d.newSaveButton.ConnectClicked(d.onNewSaveButtonClicked)
@@ -96,8 +111,10 @@ func (d *Display) Run() {
 	d.populateFields()
 
 	headerLayout := widgets.NewQGridLayout2()
-	headerLayout.AddWidget3(d.saveSelector, 0, 0, 0, 5, 0)
-	headerLayout.AddWidget2(d.newSaveButton, 0, 6, 0)
+	headerLayout.AddWidget3(d.switchModeButton, 0, 0, 1, 5, 0)
+	headerLayout.AddWidget3(d.currentModeLabel, 0, 5, 1, 1, 0)
+	headerLayout.AddWidget3(d.saveSelector, 1, 0, 1, 5, 0)
+	headerLayout.AddWidget3(d.newSaveButton, 1, 5, 1, 1, 0)
 
 	infoLayout := widgets.NewQGridLayout2()
 	infoLayout.AddWidget3(d.nameField, 0, 0, 1, 6, 0)
@@ -156,26 +173,52 @@ func (d *Display) syncBackFields() {
 	d.selectedSave.Data.Description = d.descriptionField.ToPlainText()
 }
 
+func (d *Display) onModeButtonClicked(bool) {
+	switch d.activeMode {
+	case PLAY_MODE:
+		d.currentModeLabel.SetText("build")
+		d.activeMode = BUILD_MODE
+		d.activeSaves = &d.saveHandler.BuildSaves
+	case BUILD_MODE:
+		d.activeMode = PLAY_MODE
+		d.activeSaves = &d.saveHandler.PlaySaves
+		d.currentModeLabel.SetText("play")
+	}
+	d.saveSelector.Clear()
+	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
+	d.selectedSave = &(*d.activeSaves)[d.saveSelector.CurrentIndex()]
+	d.populateFields()
+	log.Println("Switched to mode "+strconv.Itoa(d.activeMode))
+}
+
 func (d *Display) onSaveSelectedChanged(index int) {
-	d.selectedSave = &d.saveHandler.BuildSaves[index]
+	if index == -1 { // no items in dropdown
+		return
+	}
+	d.selectedSave = &(*d.activeSaves)[index]
 	d.populateFields()
 	log.Println("Selected "+strconv.Itoa(d.selectedSave.Data.Id))
 }
 
 func (d *Display) onNewSaveButtonClicked(bool) {
-	newId := d.saveHandler.MaxId()
+	newId := d.saveHandler.MaxId() + 1
 	newSave, newSaveErr := NewNewSave(d.saveHandler.PlaySaveFolderPath(newId), newId)
 	if newSaveErr != nil {
 		log.Println("Error while creating new save")
 		log.Println(newSaveErr)
 		return
 	}
-	d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, newSave)
+	switch d.activeMode {
+	case BUILD_MODE:
+		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, newSave)
+	case PLAY_MODE:
+		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, newSave)
+	}
 	d.saveSelector.AddItems([]string{newSave.Data.Name})
 	log.Println("Created new save "+strconv.Itoa(newSave.Data.Id))
 	// select newly created save
-	d.saveSelector.SetCurrentIndex(len(d.saveHandler.BuildSaves)-1)
-	d.onSaveSelectedChanged(len(d.saveHandler.BuildSaves)-1)
+	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
+	d.onSaveSelectedChanged(len(*d.activeSaves)-1)
 }
 
 func (d *Display) onSaveButtonClicked(bool) {
@@ -185,7 +228,7 @@ func (d *Display) onSaveButtonClicked(bool) {
 		log.Println(saveErr)
 	}
 	index := d.saveSelector.CurrentIndex()
-	d.saveSelector.SetItemText(index, makeSelectorOptions(d.saveHandler.BuildSaves)[index])
+	d.saveSelector.SetItemText(index, makeSelectorOptions(*d.activeSaves)[index])
 	log.Println("Saved "+strconv.Itoa(d.selectedSave.Data.Id))
 }
 
@@ -195,7 +238,12 @@ func (d *Display) onCancelButtonClicked(bool) {
 }
 
 func (d *Display) onActivateButtonClicked(bool) {
-	moveSaveToFirst(d.selectedSave, d.saveHandler.BuildSaves)
+	if d.activeMode == PLAY_MODE {
+		return // button is inactive in play mode
+	}
+	d.activeSave.MoveToId()
+	d.selectedSave.MoveToFirst()
+	d.activeSave = d.selectedSave
 	log.Println("Activated "+strconv.Itoa(d.selectedSave.Data.Id))
 }
 

@@ -1,6 +1,6 @@
 {
-  "play-path": "resources",
-  "build-path": "resources",
+  "play-path": "test-data/play",
+  "build-path": "test-data/build",
   "creator": "unknown",
   "force-creator?": false,
   "log": "log.txt",
