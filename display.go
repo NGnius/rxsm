@@ -104,11 +104,12 @@ func (d *Display) Run() {
 	d.cancelButton.ConnectClicked(d.onCancelButtonClicked)
 	d.activateButton = widgets.NewQPushButton2("activate", nil)
 	d.activateButton.ConnectClicked(d.onActivateButtonClicked)
-	d.moveButton = widgets.NewQPushButton2("functional button", nil)
+	d.moveButton = widgets.NewQPushButton2("toggle location", nil)
 	d.moveButton.ConnectClicked(d.onMoveToButtonClicked)
 
-	d.selectedSave = &d.saveHandler.BuildSaves[d.saveSelector.CurrentIndex()]
-	d.populateFields()
+	// toggle mode to populate fields
+	d.activeMode = PLAY_MODE // so toggles (back) to build mode
+	d.onModeButtonClicked(true)
 
 	headerLayout := widgets.NewQGridLayout2()
 	headerLayout.AddWidget3(d.switchModeButton, 0, 0, 1, 5, 0)
@@ -160,6 +161,9 @@ func (d *Display) Join() (int, error) {
 }
 
 func (d *Display) populateFields() {
+	if d.selectedSave == nil {
+		return
+	}
 	d.nameField.SetText(d.selectedSave.Data.Name)
 	d.creatorField.SetText(d.selectedSave.Data.Creator)
 	oldIdText := d.idLabel.Text()
@@ -186,8 +190,7 @@ func (d *Display) onModeButtonClicked(bool) {
 	}
 	d.saveSelector.Clear()
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
-	d.selectedSave = &(*d.activeSaves)[d.saveSelector.CurrentIndex()]
-	d.populateFields()
+	// propagation calls d.onSaveSelectedChanged(d.saveSelector.CurrentIndex())
 	log.Println("Switched to mode "+strconv.Itoa(d.activeMode))
 }
 
@@ -218,7 +221,7 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 	log.Println("Created new save "+strconv.Itoa(newSave.Data.Id))
 	// select newly created save
 	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
-	d.onSaveSelectedChanged(len(*d.activeSaves)-1)
+	// propagation calls d.onSaveSelectedChanged(len(*d.activeSaves)-1)
 }
 
 func (d *Display) onSaveButtonClicked(bool) {
@@ -249,7 +252,45 @@ func (d *Display) onActivateButtonClicked(bool) {
 
 func (d *Display) onMoveToButtonClicked(bool) {
 	// TODO: implement move to opposite build/play game mode folder
-	log.Println("Move to button clicked (unimplemented) button clicked")
+	if d.selectedSave == nil {
+		return
+	}
+	log.Println("Moving save "+strconv.Itoa(d.selectedSave.Data.Id))
+	if d.selectedSave == d.activeSave {
+		d.activeSave = nil
+		d.selectedSave.MoveToId()
+	}
+	switch d.activeMode {
+	case BUILD_MODE:
+		moveErr := d.selectedSave.Move(d.saveHandler.PlaySaveFolderPath(d.selectedSave.Data.Id))
+		if moveErr != nil {
+			log.Println("Error while moving "+strconv.Itoa(d.selectedSave.Data.Id))
+			log.Println(moveErr)
+			return
+		}
+		selIndex := d.saveSelector.CurrentIndex()
+		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, d.saveHandler.BuildSaves[selIndex]) // add to playsaves
+		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves[:selIndex], d.saveHandler.BuildSaves[selIndex+1:]...) // remove from buildsaves
+	case PLAY_MODE:
+		moveErr := d.selectedSave.Move(d.saveHandler.BuildSaveFolderPath(d.selectedSave.Data.Id))
+		if moveErr != nil {
+			log.Println("Error while moving "+strconv.Itoa(d.selectedSave.Data.Id))
+			log.Println(moveErr)
+			return
+		}
+		selIndex := d.saveSelector.CurrentIndex()
+		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, d.saveHandler.PlaySaves[selIndex]) // add to playsaves
+		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves[:selIndex], d.saveHandler.PlaySaves[selIndex+1:]...) // remove from buildsaves
+	}
+	if d.activeSave == nil && len(*d.activeSaves) > 0 {
+		d.activeSave = &(*d.activeSaves)[0]
+		d.activeSave.MoveToFirst()
+	}
+	d.onModeButtonClicked(true) // toggle to other mode to keep showing selected save
+	// re-select save
+	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
+	//d.onSaveSelectedChanged(len(*d.activeSaves)-1)
+	log.Println("Save moved to "+strconv.Itoa(d.activeMode))
 }
 
 // end Display
