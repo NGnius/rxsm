@@ -95,7 +95,7 @@ type Save struct {
   Data *GameData
   dataPath string
   savePath string
-  thumbnailPath string
+  ThumbnailPath string
   folder string
 }
 
@@ -103,7 +103,7 @@ func NewSave(folder string) (Save, error) {
   newSave := Save {
     dataPath: filepath.Join(folder, GameDataFile),
     savePath: filepath.Join(folder, GameSaveFile),
-    thumbnailPath: filepath.Join(folder, ThumbnailFile),
+    ThumbnailPath: filepath.Join(folder, ThumbnailFile),
     folder: folder}
   newGD, gdErr := NewGameData(newSave.dataPath)
   newSave.Data = newGD
@@ -164,7 +164,7 @@ func (s *Save) Move(to string) (error) {
   s.dataPath = filepath.Join(to, GameDataFile)
   s.Data.path = s.dataPath
   s.savePath = filepath.Join(to, GameSaveFile)
-  s.thumbnailPath = filepath.Join(to, ThumbnailFile)
+  s.ThumbnailPath = filepath.Join(to, ThumbnailFile)
   return nil
 }
 

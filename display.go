@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/therecipe/qt/widgets"
+	"github.com/therecipe/qt/gui"
 )
 
 const (
@@ -48,10 +49,9 @@ type Display struct {
 	nameField *widgets.QLineEdit
 	creatorLabel *widgets.QLabel
 	creatorField *widgets.QLineEdit
-	/* TODO: implement thumbnail button + functionality
-	imageLabel *widgets.QPixmap
-	imageButton *widgets.QPushButton
-	*/
+	// TODO: implement thumbnail button + functionality
+	thumbnailImage *gui.QIcon
+	thumbnailButton *widgets.QPushButton
 	idLabel *widgets.QLabel
 	descriptionLabel *widgets.QLabel
 	descriptionField *widgets.QPlainTextEdit
@@ -78,33 +78,38 @@ func (d *Display) Run() {
 	// create a window
 	// with a minimum size of 250*200
 	d.window = widgets.NewQMainWindow(nil, 0)
-	d.window.SetMinimumSize2(250, 200)
+	//d.window.SetMinimumSize2(250, 200)
 	d.window.SetWindowTitle("rxsm")
 
-	d.switchModeButton = widgets.NewQPushButton2("toggle mode", nil)
+	d.switchModeButton = widgets.NewQPushButton2("Toggle Mode", nil)
 	d.switchModeButton.ConnectClicked(d.onModeButtonClicked)
-	d.currentModeLabel = widgets.NewQLabel2("build", nil, 0)
+	d.currentModeLabel = widgets.NewQLabel2("Build", nil, 0)
 
 	d.saveSelector = widgets.NewQComboBox(nil)
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
 	d.saveSelector.ConnectCurrentIndexChanged(d.onSaveSelectedChanged)
-	d.newSaveButton = widgets.NewQPushButton2("new", nil)
+	d.newSaveButton = widgets.NewQPushButton2("New", nil)
 	d.newSaveButton.ConnectClicked(d.onNewSaveButtonClicked)
 
 	d.nameField = widgets.NewQLineEdit(nil)
 	d.creatorLabel = widgets.NewQLabel2("by", nil, 0)
 	d.creatorField = widgets.NewQLineEdit(nil)
+	d.thumbnailImage = gui.NewQIcon5("")
+	d.thumbnailButton = widgets.NewQPushButton2("", d.window)
+	d.thumbnailButton.SetSizePolicy(widgets.NewQSizePolicy2(4, 1, 0x00000001))
+	d.thumbnailButton.ConnectClicked(d.onThumbnailButtonClicked)
+	d.thumbnailButton.SetFlat(true)
 	d.idLabel = widgets.NewQLabel2("id: ##", nil, 0)
 	d.descriptionLabel = widgets.NewQLabel2("Description:", nil, 0)
 	d.descriptionField = widgets.NewQPlainTextEdit(nil)
 
-	d.saveButton = widgets.NewQPushButton2("save", nil)
+	d.saveButton = widgets.NewQPushButton2("Save", nil)
 	d.saveButton.ConnectClicked(d.onSaveButtonClicked)
-	d.cancelButton = widgets.NewQPushButton2("cancel", nil)
+	d.cancelButton = widgets.NewQPushButton2("Cancel", nil)
 	d.cancelButton.ConnectClicked(d.onCancelButtonClicked)
-	d.activateButton = widgets.NewQPushButton2("activate", nil)
+	d.activateButton = widgets.NewQPushButton2("Activate", nil)
 	d.activateButton.ConnectClicked(d.onActivateButtonClicked)
-	d.moveButton = widgets.NewQPushButton2("toggle location", nil)
+	d.moveButton = widgets.NewQPushButton2("Toggle Location", nil)
 	d.moveButton.ConnectClicked(d.onMoveToButtonClicked)
 
 	// toggle mode to populate fields
@@ -118,9 +123,10 @@ func (d *Display) Run() {
 	headerLayout.AddWidget3(d.newSaveButton, 1, 5, 1, 1, 0)
 
 	infoLayout := widgets.NewQGridLayout2()
-	infoLayout.AddWidget3(d.nameField, 0, 0, 1, 6, 0)
+	infoLayout.AddWidget3(d.nameField, 0, 0, 1, 4, 0)
+	infoLayout.AddWidget3(d.thumbnailButton, 0, 4, 2, 2, 0)
 	infoLayout.AddWidget2(d.creatorLabel, 1, 0, 0)
-	infoLayout.AddWidget3(d.creatorField, 1, 1, 1, 5, 0)
+	infoLayout.AddWidget3(d.creatorField, 1, 1, 1, 3, 0)
 
 	descriptionLayout := widgets.NewQGridLayout2()
 	descriptionLayout.AddWidget3(d.descriptionLabel, 0, 0, 1, 5, 0)
@@ -169,6 +175,13 @@ func (d *Display) populateFields() {
 	oldIdText := d.idLabel.Text()
 	d.idLabel.SetText(oldIdText[:len(oldIdText)-2]+DoubleDigitStr(d.selectedSave.Data.Id))
 	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
+	d.thumbnailImage.Swap(gui.NewQIcon5(d.selectedSave.ThumbnailPath))
+	d.thumbnailButton.SetIcon(d.thumbnailImage)
+	tSize := d.thumbnailButton.Size()
+	tSize.SetHeight((tSize.Height()*4)/3)
+	tSize.SetWidth((tSize.Width()*4)/3)
+	d.thumbnailButton.SetIcon(d.thumbnailImage)
+	d.thumbnailButton.SetIconSize(tSize)
 }
 
 func (d *Display) syncBackFields() {
@@ -222,6 +235,11 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 	// select newly created save
 	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
 	// propagation calls d.onSaveSelectedChanged(len(*d.activeSaves)-1)
+}
+
+func (d *Display) onThumbnailButtonClicked(bool) {
+	// TODO: implement thumbnail picker dialogue
+	log.Println("Thumbnail button clicked (unimplemented)")
 }
 
 func (d *Display) onSaveButtonClicked(bool) {
