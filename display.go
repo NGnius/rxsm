@@ -99,6 +99,7 @@ func (d *Display) Run() {
 	d.thumbnailButton.SetSizePolicy(widgets.NewQSizePolicy2(4, 1, 0x00000001))
 	d.thumbnailButton.ConnectClicked(d.onThumbnailButtonClicked)
 	d.thumbnailButton.SetFlat(true)
+	d.thumbnailButton.SetIconSize(d.thumbnailButton.Size())
 	d.idLabel = widgets.NewQLabel2("id: ##", nil, 0)
 	d.descriptionLabel = widgets.NewQLabel2("Description:", nil, 0)
 	d.descriptionField = widgets.NewQPlainTextEdit(nil)
@@ -177,11 +178,6 @@ func (d *Display) populateFields() {
 	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
 	d.thumbnailImage.Swap(gui.NewQIcon5(d.selectedSave.ThumbnailPath))
 	d.thumbnailButton.SetIcon(d.thumbnailImage)
-	tSize := d.thumbnailButton.Size()
-	tSize.SetHeight((tSize.Height()*4)/3)
-	tSize.SetWidth((tSize.Width()*4)/3)
-	d.thumbnailButton.SetIcon(d.thumbnailImage)
-	d.thumbnailButton.SetIconSize(tSize)
 }
 
 func (d *Display) syncBackFields() {
