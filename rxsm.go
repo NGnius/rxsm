@@ -33,11 +33,11 @@ func init() {
   if openErr != nil {
     // no config file found, use default config
     if runtime.GOOS == "windows" {
-      config.PlayPath = filepath.FromSlash("%APPDATA%/../LocalLow/Freejam/RobocraftX/Games")
-      config.BuildPath = filepath.FromSlash("C:/Program Files (x86)/Steam/steamapps/common/RobocraftX/RobocraftX_Data/StreamingAssets/Games/Freejam")
+      config.BuildPath = filepath.FromSlash(os.Getenv("APPDATA")+"/../LocalLow/Freejam/RobocraftX/Games")
+      config.PlayPath = filepath.FromSlash("C:/Program Files (x86)/Steam/steamapps/common/RobocraftX/RobocraftX_Data/StreamingAssets/Games/Freejam")
     } else if runtime.GOOS == "linux" {
-      config.PlayPath = filepath.FromSlash("~/.local/share/Steam/steamapps/compatdata/1078000/pfx/drive_c/users/steamuser/AppData/LocalLow/Freejam/RobocraftX/Games")
-      config.BuildPath = filepath.FromSlash("~/.local/share/Steam/steamapps/common/RobocraftX/RobocraftX_Data/StreamingAssets/Games/Freejam")
+      config.BuildPath = filepath.FromSlash("~/.local/share/Steam/steamapps/compatdata/1078000/pfx/drive_c/users/steamuser/AppData/LocalLow/Freejam/RobocraftX/Games")
+      config.PlayPath = filepath.FromSlash("~/.local/share/Steam/steamapps/common/RobocraftX/RobocraftX_Data/StreamingAssets/Games/Freejam")
     } else if runtime.GOOS == "darwin" { // macOS
       // support doesn't really matter until SteamPlay or FJ supports MacOS
       log.Fatal("OS detected as macOS (unsupported)")
