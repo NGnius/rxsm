@@ -88,6 +88,28 @@ func (sv SaveHandler) ActiveBuildSave() (as *Save) {
   }
   return
 }
+
+func (sv SaveHandler) CopyTo(from string, to string) (copyErr error) {
+  var fileBytes []byte
+  var in, out *os.File
+  in, copyErr = os.Open(from)
+  if copyErr != nil {
+    return
+  }
+  out, copyErr = os.Create(to)
+  if copyErr != nil {
+    return
+  }
+  fileBytes, copyErr = ioutil.ReadAll(in)
+  if copyErr != nil {
+    return
+  }
+  out.Write(fileBytes)
+  in.Close()
+  out.Sync()
+  out.Close()
+  return
+}
 // end of SaveHandler
 
 // start Save

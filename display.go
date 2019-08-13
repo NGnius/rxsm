@@ -34,6 +34,7 @@ type Display struct {
 	activeMode int
 	activeSaves *[]Save
 	saveHandler SaveHandler
+	temporaryThumbnailPath string
 	endChan chan int
 	// Qt GUI objects
 	window *widgets.QMainWindow
@@ -98,7 +99,6 @@ func (d *Display) Run() {
 	d.thumbnailButton = widgets.NewQPushButton2("", d.window)
 	d.thumbnailButton.SetSizePolicy(widgets.NewQSizePolicy2(4, 1, 0x00000001))
 	d.thumbnailButton.ConnectClicked(d.onThumbnailButtonClicked)
-	d.thumbnailButton.SetFlat(true)
 	d.thumbnailButton.SetIconSize(d.thumbnailButton.Size())
 	d.idLabel = widgets.NewQLabel2("id: ##", nil, 0)
 	d.descriptionLabel = widgets.NewQLabel2("Description:", nil, 0)
@@ -184,6 +184,15 @@ func (d *Display) syncBackFields() {
 	d.selectedSave.Data.Name = d.nameField.Text()
 	d.selectedSave.Data.Creator = d.creatorField.Text()
 	d.selectedSave.Data.Description = d.descriptionField.ToPlainText()
+	// copy thumbnail to save location
+	if d.temporaryThumbnailPath != d.selectedSave.ThumbnailPath && d.temporaryThumbnailPath != "" {
+		copyErr := d.saveHandler.CopyTo(d.temporaryThumbnailPath, d.selectedSave.ThumbnailPath)
+		if copyErr != nil {
+			log.Print("Error while copying Thumbnail from "+d.temporaryThumbnailPath+" to "+d.selectedSave.ThumbnailPath)
+			log.Println(copyErr)
+		}
+		d.temporaryThumbnailPath = ""
+	}
 }
 
 func (d *Display) onModeButtonClicked(bool) {
@@ -235,7 +244,15 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 
 func (d *Display) onThumbnailButtonClicked(bool) {
 	// TODO: implement thumbnail picker dialogue
-	log.Println("Thumbnail button clicked (unimplemented)")
+	var fileDialog *widgets.QFileDialog = widgets.NewQFileDialog(nil, 0)
+	d.temporaryThumbnailPath = fileDialog.GetOpenFileName(d.window, "caption", d.selectedSave.ThumbnailPath, "Images (*.jpg)", "", 0)
+	if d.temporaryThumbnailPath != "" {
+		d.thumbnailImage.Swap(gui.NewQIcon5(d.temporaryThumbnailPath))
+		d.thumbnailButton.SetIcon(d.thumbnailImage)
+		log.Println("Thumbnail temporarily set to "+d.temporaryThumbnailPath)
+	} else {
+		log.Println("Thumbnail button clicked but dialog cancelled")
+	}
 }
 
 func (d *Display) onSaveButtonClicked(bool) {
