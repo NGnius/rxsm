@@ -201,7 +201,7 @@ func (s *Save) MoveToId() (error) {
 
 func (s *Save) MoveToFirst() (error) {
   firstDir, _ := filepath.Split(s.folder)
-  firstDir = filepath.Join(firstDir, GameStart+"00")
+  firstDir = filepath.Join(firstDir, "!!!"+GameStart+"00")
   return s.Move(firstDir)
 }
 

@@ -50,7 +50,6 @@ type Display struct {
 	nameField *widgets.QLineEdit
 	creatorLabel *widgets.QLabel
 	creatorField *widgets.QLineEdit
-	// TODO: implement thumbnail button + functionality
 	thumbnailImage *gui.QIcon
 	thumbnailButton *widgets.QPushButton
 	idLabel *widgets.QLabel
@@ -243,7 +242,6 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 }
 
 func (d *Display) onThumbnailButtonClicked(bool) {
-	// TODO: implement thumbnail picker dialogue
 	var fileDialog *widgets.QFileDialog = widgets.NewQFileDialog(nil, 0)
 	d.temporaryThumbnailPath = fileDialog.GetOpenFileName(d.window, "caption", d.selectedSave.ThumbnailPath, "Images (*.jpg)", "", 0)
 	if d.temporaryThumbnailPath != "" {
@@ -273,16 +271,23 @@ func (d *Display) onCancelButtonClicked(bool) {
 
 func (d *Display) onActivateButtonClicked(bool) {
 	if d.activeMode == PLAY_MODE {
+		log.Println("Hey buddy, you can't activate a play save")
 		return // button is inactive in play mode
 	}
-	d.activeSave.MoveToId()
-	d.selectedSave.MoveToFirst()
-	d.activeSave = d.selectedSave
+	if d.activeSave != nil {
+		d.activeSave.MoveToId()
+	}
+	if d.selectedSave != nil {
+			d.selectedSave.MoveToFirst()
+			d.activeSave = d.selectedSave
+	} else {
+			log.Println("Selected save is nil; activation failed")
+			return
+	}
 	log.Println("Activated "+strconv.Itoa(d.selectedSave.Data.Id))
 }
 
 func (d *Display) onMoveToButtonClicked(bool) {
-	// TODO: implement move to opposite build/play game mode folder
 	if d.selectedSave == nil {
 		return
 	}
