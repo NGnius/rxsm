@@ -15,12 +15,6 @@ const (
 	BUILD_MODE = 1
 	PLAY_MODE = 2
 )
-
-var (
-	activeSaveHandler SaveHandler
-	selectedSave Save
-)
-
 // start Display
 type IDisplayGoroutine interface {
 	Run()
@@ -57,7 +51,7 @@ type Display struct {
 	descriptionField *widgets.QPlainTextEdit
 	saveButton *widgets.QPushButton
 	cancelButton *widgets.QPushButton
-	activateButton *widgets.QPushButton
+	activateCheckbox *widgets.QCheckBox
 	moveButton *widgets.QPushButton
 }
 
@@ -70,7 +64,11 @@ func NewDisplay(saveHandler SaveHandler) (*Display){
 func (d *Display) Run() {
 	d.activeMode = BUILD_MODE
 	d.activeSaves = &d.saveHandler.BuildSaves
-	log.Println(d.saveHandler.PlaySaves)
+	if d.activeSave != nil {
+		log.Println("Active save on startup "+strconv.Itoa(d.activeSave.Data.Id))
+	} else {
+		log.Println("No active save detected on startup")
+	}
 	log.Println("Display started")
 	// build initial display
 	d.app = widgets.NewQApplication(len(os.Args), os.Args)
@@ -107,8 +105,8 @@ func (d *Display) Run() {
 	d.saveButton.ConnectClicked(d.onSaveButtonClicked)
 	d.cancelButton = widgets.NewQPushButton2("Cancel", nil)
 	d.cancelButton.ConnectClicked(d.onCancelButtonClicked)
-	d.activateButton = widgets.NewQPushButton2("Activate", nil)
-	d.activateButton.ConnectClicked(d.onActivateButtonClicked)
+	d.activateCheckbox = widgets.NewQCheckBox2("Activated", nil)
+	d.activateCheckbox.ConnectStateChanged(d.onActivateChecked)
 	d.moveButton = widgets.NewQPushButton2("Toggle Location", nil)
 	d.moveButton.ConnectClicked(d.onMoveToButtonClicked)
 
@@ -125,19 +123,20 @@ func (d *Display) Run() {
 	infoLayout := widgets.NewQGridLayout2()
 	infoLayout.AddWidget3(d.nameField, 0, 0, 1, 4, 0)
 	infoLayout.AddWidget3(d.thumbnailButton, 0, 4, 2, 2, 0)
-	infoLayout.AddWidget2(d.creatorLabel, 1, 0, 0)
+	infoLayout.AddWidget2(d.creatorLabel, 1, 0, 0x0004)
 	infoLayout.AddWidget3(d.creatorField, 1, 1, 1, 3, 0)
 
 	descriptionLayout := widgets.NewQGridLayout2()
 	descriptionLayout.AddWidget3(d.descriptionLabel, 0, 0, 1, 5, 0)
-	descriptionLayout.AddWidget2(d.idLabel, 0, 5, 0)
+	descriptionLayout.AddWidget2(d.idLabel, 0, 5, 0x0084)
 	descriptionLayout.AddWidget3(d.descriptionField, 1, 0, 1, 6, 0)
 
 	bottomButtons := widgets.NewQGridLayout2()
 	bottomButtons.AddWidget2(d.saveButton, 0, 0, 0)
 	bottomButtons.AddWidget2(d.cancelButton, 0, 1, 0)
-	bottomButtons.AddWidget2(d.activateButton, 1, 0, 0)
+	bottomButtons.AddWidget2(d.activateCheckbox, 1, 0, 0x0004)
 	bottomButtons.AddWidget2(d.moveButton, 1, 1, 0)
+	//bottomButtons.AddWidget2(d.activateCheckbox, 2, 0, 0)
 
 	masterLayout := widgets.NewQGridLayout2()
 	masterLayout.AddLayout(headerLayout, 0, 0, 0)
@@ -177,6 +176,11 @@ func (d *Display) populateFields() {
 	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
 	d.thumbnailImage.Swap(gui.NewQIcon5(d.selectedSave.ThumbnailPath))
 	d.thumbnailButton.SetIcon(d.thumbnailImage)
+	if d.activeSave == d.selectedSave {
+		d.activateCheckbox.SetCheckState(2)
+	} else {
+		d.activateCheckbox.SetCheckState(0)
+	}
 }
 
 func (d *Display) syncBackFields() {
@@ -200,10 +204,12 @@ func (d *Display) onModeButtonClicked(bool) {
 		d.currentModeLabel.SetText("build")
 		d.activeMode = BUILD_MODE
 		d.activeSaves = &d.saveHandler.BuildSaves
+		d.activateCheckbox.SetCheckable(true)
 	case BUILD_MODE:
 		d.activeMode = PLAY_MODE
 		d.activeSaves = &d.saveHandler.PlaySaves
 		d.currentModeLabel.SetText("play")
+		d.activateCheckbox.SetCheckable(false)
 	}
 	d.saveSelector.Clear()
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
@@ -222,16 +228,24 @@ func (d *Display) onSaveSelectedChanged(index int) {
 
 func (d *Display) onNewSaveButtonClicked(bool) {
 	newId := d.saveHandler.MaxId() + 1
-	newSave, newSaveErr := NewNewSave(d.saveHandler.PlaySaveFolderPath(newId), newId)
-	if newSaveErr != nil {
-		log.Println("Error while creating new save")
-		log.Println(newSaveErr)
-		return
-	}
+	var newSave Save
+	var newSaveErr error
 	switch d.activeMode {
 	case BUILD_MODE:
+		newSave, newSaveErr = NewNewSave(d.saveHandler.BuildSaveFolderPath(newId), newId)
+		if newSaveErr != nil {
+			log.Println("Error while creating new build save")
+			log.Println(newSaveErr)
+			return
+		}
 		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, newSave)
 	case PLAY_MODE:
+		newSave, newSaveErr = NewNewSave(d.saveHandler.PlaySaveFolderPath(newId), newId)
+		if newSaveErr != nil {
+			log.Println("Error while creating new play save")
+			log.Println(newSaveErr)
+			return
+		}
 		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, newSave)
 	}
 	d.saveSelector.AddItems([]string{newSave.Data.Name})
@@ -269,22 +283,38 @@ func (d *Display) onCancelButtonClicked(bool) {
 	log.Println("Canceled "+strconv.Itoa(d.selectedSave.Data.Id))
 }
 
-func (d *Display) onActivateButtonClicked(bool) {
+func (d *Display) onActivateChecked(checkState int) {
+	// TODO: implement check behaviour
 	if d.activeMode == PLAY_MODE {
 		log.Println("Hey buddy, you can't activate a play save")
-		return // button is inactive in play mode
+		return // activating a play save is pointless
 	}
 	if d.activeSave != nil {
-		d.activeSave.MoveToId()
-	}
-	if d.selectedSave != nil {
-			d.selectedSave.MoveToFirst()
-			d.activeSave = d.selectedSave
-	} else {
-			log.Println("Selected save is nil; activation failed")
+		moveErr := d.activeSave.MoveToId()
+		if moveErr != nil {
+			log.Println("Error while deactivating "+strconv.Itoa(d.activeSave.Data.Id))
+			log.Println(moveErr)
 			return
+		}
+		log.Println("Deactivated "+strconv.Itoa(d.activeSave.Data.Id))
 	}
-	log.Println("Activated "+strconv.Itoa(d.selectedSave.Data.Id))
+	switch checkState {
+	case 0:
+		d.activeSave = nil
+	case 2:
+		if d.selectedSave != nil {
+			d.activeSave = d.selectedSave
+			moveErr := d.activeSave.MoveToFirst()
+			if moveErr != nil {
+				log.Println("Error while activating "+strconv.Itoa(d.activeSave.Data.Id))
+				log.Println(moveErr)
+				return
+			}
+			log.Println("Activated "+strconv.Itoa(d.activeSave.Data.Id))
+		} else {
+			log.Println("Selected save is nil, activation failed")
+		}
+	}
 }
 
 func (d *Display) onMoveToButtonClicked(bool) {
@@ -350,20 +380,4 @@ func moveSaveToFirst(selected *Save, saves []Save) {
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func getSelectedSave(name string) (save Save, isFound bool){
-	var noResult Save
-	noResult.Data.Id = -1
-	for _, s := range activeSaveHandler.BuildSaves {
-		if s.Data.Name == name {
-			return s, true
-		}
-	}
-	for _, s := range activeSaveHandler.PlaySaves {
-		if s.Data.Name == name {
-			return s, true
-		}
-	}
-	return noResult, false
 }
