@@ -1,5 +1,3 @@
-//#!/bin/go
-
 // Created 2019-07-26 by NGnius
 
 package main
@@ -19,6 +17,7 @@ const (
   ConfigCreator = "unknown"
   ConfigLogPath = "rxsm.log"
   ConfigSaveFolder = "default_save"
+  ConfigPlayPathEnding = "RobocraftX_Data/StreamingAssets/Games/Freejam"
 )
 
 var configPath string = "config.json"
@@ -34,10 +33,10 @@ func init() {
     // no config file found, use default config
     if runtime.GOOS == "windows" {
       config.BuildPath = filepath.FromSlash(os.Getenv("APPDATA")+"/../LocalLow/Freejam/RobocraftX/Games")
-      config.PlayPath = filepath.FromSlash("C:/Program Files (x86)/Steam/steamapps/common/RobocraftX/RobocraftX_Data/StreamingAssets/Games/Freejam")
+      config.PlayPath = filepath.FromSlash("C:/Program Files (x86)/Steam/steamapps/common/RobocraftX/"+ConfigPlayPathEnding)
     } else if runtime.GOOS == "linux" {
       config.BuildPath = filepath.FromSlash("~/.local/share/Steam/steamapps/compatdata/1078000/pfx/drive_c/users/steamuser/AppData/LocalLow/Freejam/RobocraftX/Games")
-      config.PlayPath = filepath.FromSlash("~/.local/share/Steam/steamapps/common/RobocraftX/RobocraftX_Data/StreamingAssets/Games/Freejam")
+      config.PlayPath = filepath.FromSlash("~/.local/share/Steam/steamapps/common/RobocraftX/"+ConfigPlayPathEnding)
     } else if runtime.GOOS == "darwin" { // macOS
       // support doesn't really matter until SteamPlay or FJ supports MacOS
       log.Fatal("OS detected as macOS (unsupported)")
@@ -64,6 +63,7 @@ func init() {
 }
 
 func main() {
+  var exitVal int
   log.Println("Starting main routine")
   config.Save()
   log.Println("RobocraftX Play Path: "+config.PlayPath)
@@ -71,8 +71,16 @@ func main() {
   saveHandler := NewSaveHandler(config.PlayPath, config.BuildPath)
   activeDisplay = NewDisplay(saveHandler)
   activeDisplay.Start()
-  activeDisplay.Join()
+  exitVal, _ = activeDisplay.Join()
+  if exitVal == 20 { // set new install dir
+    log.Println("Display requested an update to PlayPath")
+    config.PlayPath = filepath.FromSlash(NewInstallPath+"/"+ConfigPlayPathEnding)
+    log.Println("New RobocraftX Play Path: "+config.PlayPath)
+    config.Save()
+    exitVal = 0
+  }
   log.Println("rxsm terminated")
+  os.Exit(exitVal) // this prevents defered operations, which may cause issues
 }
 
 // start of Config

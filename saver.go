@@ -17,7 +17,6 @@ const (
   GameDataFile = "GameData.json"
   GameSaveFile = "GameSave.RCX"
   ThumbnailFile = "Thumbnail.jpg"
-  FirstGameDir = "!!!"+GameStart+"00"
 )
 
 var (
@@ -52,6 +51,7 @@ func (sv SaveHandler) getSaves(saveFolder string) ([]Save){
     if sErr == nil {
       saves = append(saves, s)
     } else {
+      log.Println("Error in SaveHandler.getSaves")
       log.Println(sErr)
     }
   }
@@ -81,10 +81,10 @@ func (sv SaveHandler) MaxId() (max int) {
   return
 }
 
-func (sv SaveHandler) ActiveBuildSave() (abs *Save) {
-  for i, save := range sv.BuildSaves {
-    if save.folder[len(save.folder)-len(FirstGameDir):] == FirstGameDir  {
-      abs = &sv.BuildSaves[i]
+func (sv SaveHandler) ActiveBuildSave() (as *Save) {
+  for _, save := range sv.BuildSaves {
+    if save.folder == sv.BuildSaveFolderPath(0) {
+      as = &save
     }
   }
   return
@@ -202,7 +202,7 @@ func (s *Save) MoveToId() (error) {
 
 func (s *Save) MoveToFirst() (error) {
   firstDir, _ := filepath.Split(s.folder)
-  firstDir = filepath.Join(firstDir, FirstGameDir)
+  firstDir = filepath.Join(firstDir, GameStart+"00")
   return s.Move(firstDir)
 }
 

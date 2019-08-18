@@ -10,6 +10,7 @@ if [ -d ./linux ]
 then
   rmdir ./linux
 fi
+rm -f moc* # auto generated files
 mkdir ./deploy/linux/default_save
 cp ./resources/default_save/** ./deploy/linux/default_save
 exit 0

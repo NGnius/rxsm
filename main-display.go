@@ -15,6 +15,10 @@ const (
 	BUILD_MODE = 1
 	PLAY_MODE = 2
 )
+
+var (
+	NewInstallPath string
+)
 // start Display
 type IDisplayGoroutine interface {
 	Run()
@@ -28,6 +32,8 @@ type Display struct {
 	activeMode int
 	activeSaves *[]Save
 	saveHandler SaveHandler
+	exitStatus int
+	firstTime bool
 	temporaryThumbnailPath string
 	endChan chan int
 	// Qt GUI objects
@@ -53,10 +59,11 @@ type Display struct {
 	cancelButton *widgets.QPushButton
 	activateCheckbox *widgets.QCheckBox
 	moveButton *widgets.QPushButton
+	installPathDialog *InstallPathDialog
 }
 
 func NewDisplay(saveHandler SaveHandler) (*Display){
-	newD := Display {endChan: make(chan int), saveHandler:saveHandler}
+	newD := Display {endChan: make(chan int, 1), saveHandler:saveHandler, firstTime:true}
 	newD.activeSave = saveHandler.ActiveBuildSave()
 	return &newD
 }
@@ -149,12 +156,20 @@ func (d *Display) Run() {
 	d.window.SetCentralWidget(centralWidget)
 
 	d.window.Show()
+	if len(d.saveHandler.PlaySaves) == 0 { // automatically prompt for RCX location if not default
+		log.Println("PlaySaves is empty, opening install location dialog")
+		d.installPathDialog = NewInstallPathDialog(d.window, 0)
+		d.installPathDialog.ConnectFinished(d.onInstallPathDialogFinished)
+		d.installPathDialog.OpenInstallPathDialog()
+	}
+
 	// start the main Qt event loop
 	// and block until app.Exit() is called
 	// or the window is closed by the user
 	d.app.Exec()
+	d.window.Hide()
 	log.Println("Display ended")
-	d.endChan <- 0
+	d.endChan <- d.exitStatus
 }
 
 func (d *Display) Start() {
@@ -171,8 +186,7 @@ func (d *Display) populateFields() {
 	}
 	d.nameField.SetText(d.selectedSave.Data.Name)
 	d.creatorField.SetText(d.selectedSave.Data.Creator)
-	oldIdText := d.idLabel.Text()
-	d.idLabel.SetText(oldIdText[:len(oldIdText)-2]+DoubleDigitStr(d.selectedSave.Data.Id))
+	d.idLabel.SetText("id: "+DoubleDigitStr(d.selectedSave.Data.Id))
 	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
 	d.thumbnailImage.Swap(gui.NewQIcon5(d.selectedSave.ThumbnailPath))
 	d.thumbnailButton.SetIcon(d.thumbnailImage)
@@ -195,6 +209,20 @@ func (d *Display) syncBackFields() {
 			log.Println(copyErr)
 		}
 		d.temporaryThumbnailPath = ""
+	}
+}
+
+func (d *Display) onInstallPathDialogFinished(int) {
+	log.Println("Install Path Dialog closed")
+	NewInstallPath = d.installPathDialog.InstallPath
+	if NewInstallPath != "" {
+		if d.installPathDialog.Result() == 1 {
+			log.Println("New Install Path provided, requesting restart")
+			d.exitStatus = 20
+			// d.app.Exit(0)
+		} else {
+			NewInstallPath = ""
+		}
 	}
 }
 
@@ -257,7 +285,7 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 
 func (d *Display) onThumbnailButtonClicked(bool) {
 	var fileDialog *widgets.QFileDialog = widgets.NewQFileDialog(nil, 0)
-	d.temporaryThumbnailPath = fileDialog.GetOpenFileName(d.window, "caption", d.selectedSave.ThumbnailPath, "Images (*.jpg)", "", 0)
+	d.temporaryThumbnailPath = fileDialog.GetOpenFileName(d.window, "Select a new thumbnail", d.selectedSave.ThumbnailPath, "Images (*.jpg)", "", 0)
 	if d.temporaryThumbnailPath != "" {
 		d.thumbnailImage.Swap(gui.NewQIcon5(d.temporaryThumbnailPath))
 		d.thumbnailButton.SetIcon(d.thumbnailImage)
