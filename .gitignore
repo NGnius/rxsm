@@ -14,7 +14,7 @@
 # binaries
 bin/**
 release/**
-deploy/**
+rxsm/deploy/**
 
 # test data
 temp**
@@ -24,4 +24,4 @@ log.txt
 **.log
 
 # install stuff
-vendor/**
+rxsm/vendor/**
