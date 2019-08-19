@@ -25,3 +25,4 @@ log.txt
 
 # install stuff
 rxsm/vendor/**
+vendor/**
