@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	BUILD_MODE = 1
-	PLAY_MODE = 2
+	BUILD_MODE = 0
+	PLAY_MODE = 1
 )
 
 var (
@@ -39,8 +39,7 @@ type Display struct {
 	// Qt GUI objects
 	window *widgets.QMainWindow
 	app *widgets.QApplication
-	switchModeButton *widgets.QPushButton
-	currentModeLabel *widgets.QLabel
+	modeTab *widgets.QTabBar
 	/* TODO: import and export buttons + functionality
 	importButton *widget.QPushButton2
 	exportButton *widget.QPushButton2
@@ -85,10 +84,8 @@ func (d *Display) Run() {
 	d.window = widgets.NewQMainWindow(nil, 0)
 	//d.window.SetMinimumSize2(250, 200)
 	d.window.SetWindowTitle("rxsm")
-
-	d.switchModeButton = widgets.NewQPushButton2("Toggle Mode", nil)
-	d.switchModeButton.ConnectClicked(d.onModeButtonClicked)
-	d.currentModeLabel = widgets.NewQLabel2("Build", nil, 0)
+	d.modeTab = widgets.NewQTabBar(nil)
+	d.modeTab.ConnectCurrentChanged(d.onModeTabChanged)
 
 	d.saveSelector = widgets.NewQComboBox(nil)
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
@@ -104,8 +101,8 @@ func (d *Display) Run() {
 	d.thumbnailButton.SetSizePolicy(widgets.NewQSizePolicy2(4, 1, 0x00000001))
 	d.thumbnailButton.ConnectClicked(d.onThumbnailButtonClicked)
 	d.thumbnailButton.SetIconSize(d.thumbnailButton.Size())
-	d.idLabel = widgets.NewQLabel2("id: ##", nil, 0)
-	d.descriptionLabel = widgets.NewQLabel2("Description:", nil, 0)
+	d.idLabel = widgets.NewQLabel2("ID: ##", nil, 0)
+	d.descriptionLabel = widgets.NewQLabel2("Description", nil, 0)
 	d.descriptionField = widgets.NewQPlainTextEdit(nil)
 
 	d.saveButton = widgets.NewQPushButton2("Save", nil)
@@ -117,33 +114,32 @@ func (d *Display) Run() {
 	d.moveButton = widgets.NewQPushButton2("Toggle Location", nil)
 	d.moveButton.ConnectClicked(d.onMoveToButtonClicked)
 
-	// toggle mode to populate fields
-	d.activeMode = PLAY_MODE // so toggles (back) to build mode
-	d.onModeButtonClicked(true)
+	// populate fields
+	// propogation of events calls d.onModeTabChanged(BUILD_MODE)
+	d.modeTab.AddTab("Build")
+	d.modeTab.AddTab("Play")
 
 	headerLayout := widgets.NewQGridLayout2()
-	headerLayout.AddWidget3(d.switchModeButton, 0, 0, 1, 5, 0)
-	headerLayout.AddWidget3(d.currentModeLabel, 0, 5, 1, 1, 0)
+	headerLayout.AddWidget3(d.modeTab, 0, 0, 1, 6, 0)
 	headerLayout.AddWidget3(d.saveSelector, 1, 0, 1, 5, 0)
 	headerLayout.AddWidget3(d.newSaveButton, 1, 5, 1, 1, 0)
 
 	infoLayout := widgets.NewQGridLayout2()
-	infoLayout.AddWidget3(d.nameField, 0, 0, 1, 4, 0)
-	infoLayout.AddWidget3(d.thumbnailButton, 0, 4, 2, 2, 0)
-	infoLayout.AddWidget2(d.creatorLabel, 1, 0, 0x0004)
-	infoLayout.AddWidget3(d.creatorField, 1, 1, 1, 3, 0)
+	infoLayout.AddWidget3(d.activateCheckbox, 0, 0, 1, 3, 0x0004)
+	infoLayout.AddWidget3(d.idLabel, 0, 3, 1, 2, 0)
+	infoLayout.AddWidget3(d.nameField, 1, 0, 1, 4, 0)
+	infoLayout.AddWidget3(d.thumbnailButton, 0, 4, 3, 2, 0)
+	infoLayout.AddWidget2(d.creatorLabel, 2, 0, 0x0004)
+	infoLayout.AddWidget3(d.creatorField, 2, 1, 1, 3, 0)
 
 	descriptionLayout := widgets.NewQGridLayout2()
-	descriptionLayout.AddWidget3(d.descriptionLabel, 0, 0, 1, 5, 0)
-	descriptionLayout.AddWidget2(d.idLabel, 0, 5, 0x0084)
-	descriptionLayout.AddWidget3(d.descriptionField, 1, 0, 1, 6, 0)
+	descriptionLayout.AddWidget2(d.descriptionLabel, 0, 0, 0x0004)
+	descriptionLayout.AddWidget2(d.descriptionField, 1, 0, 0)
 
 	bottomButtons := widgets.NewQGridLayout2()
 	bottomButtons.AddWidget2(d.saveButton, 0, 0, 0)
 	bottomButtons.AddWidget2(d.cancelButton, 0, 1, 0)
-	bottomButtons.AddWidget2(d.activateCheckbox, 1, 0, 0x0004)
-	bottomButtons.AddWidget2(d.moveButton, 1, 1, 0)
-	//bottomButtons.AddWidget2(d.activateCheckbox, 2, 0, 0)
+	bottomButtons.AddWidget3(d.moveButton, 1, 0, 1, 2, 0)
 
 	masterLayout := widgets.NewQGridLayout2()
 	masterLayout.AddLayout(headerLayout, 0, 0, 0)
@@ -154,6 +150,10 @@ func (d *Display) Run() {
 	centralWidget := widgets.NewQWidget(d.window, 0)
 	centralWidget.SetLayout(masterLayout)
 	d.window.SetCentralWidget(centralWidget)
+
+	// TODO: make icon
+	//rxsmIcon := gui.NewQIcon5("path/to/icon")
+	//d.window.SetIcon(rxsmIcon)
 
 	d.window.Show()
 	if len(d.saveHandler.PlaySaves) == 0 { // automatically prompt for RCX location if not default
@@ -186,7 +186,7 @@ func (d *Display) populateFields() {
 	}
 	d.nameField.SetText(d.selectedSave.Data.Name)
 	d.creatorField.SetText(d.selectedSave.Data.Creator)
-	d.idLabel.SetText("id: "+DoubleDigitStr(d.selectedSave.Data.Id))
+	d.idLabel.SetText("ID: "+DoubleDigitStr(d.selectedSave.Data.Id))
 	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
 	d.thumbnailImage.Swap(gui.NewQIcon5(d.selectedSave.ThumbnailPath))
 	d.thumbnailButton.SetIcon(d.thumbnailImage)
@@ -226,19 +226,19 @@ func (d *Display) onInstallPathDialogFinished(int) {
 	}
 }
 
-func (d *Display) onModeButtonClicked(bool) {
-	switch d.activeMode {
-	case PLAY_MODE:
-		d.currentModeLabel.SetText("build")
-		d.activeMode = BUILD_MODE
+func (d *Display) onModeTabChanged(tabIndex int) {
+	if tabIndex == -1 { // no tabs
+		return
+	}
+	switch tabIndex {
+	case BUILD_MODE:
 		d.activeSaves = &d.saveHandler.BuildSaves
 		d.activateCheckbox.SetCheckable(true)
-	case BUILD_MODE:
-		d.activeMode = PLAY_MODE
+	case PLAY_MODE:
 		d.activeSaves = &d.saveHandler.PlaySaves
-		d.currentModeLabel.SetText("play")
 		d.activateCheckbox.SetCheckable(false)
 	}
+	d.activeMode = tabIndex
 	d.saveSelector.Clear()
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
 	// propagation calls d.onSaveSelectedChanged(d.saveSelector.CurrentIndex())
@@ -365,6 +365,8 @@ func (d *Display) onMoveToButtonClicked(bool) {
 		selIndex := d.saveSelector.CurrentIndex()
 		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, d.saveHandler.BuildSaves[selIndex]) // add to playsaves
 		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves[:selIndex], d.saveHandler.BuildSaves[selIndex+1:]...) // remove from buildsaves
+		d.modeTab.SetCurrentIndex(PLAY_MODE) // toggle to other mode to keep showing selected save
+		// propagation calls d.onModeTabChanged(PLAY_MODE)
 	case PLAY_MODE:
 		moveErr := d.selectedSave.Move(d.saveHandler.BuildSaveFolderPath(d.selectedSave.Data.Id))
 		if moveErr != nil {
@@ -375,12 +377,13 @@ func (d *Display) onMoveToButtonClicked(bool) {
 		selIndex := d.saveSelector.CurrentIndex()
 		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, d.saveHandler.PlaySaves[selIndex]) // add to playsaves
 		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves[:selIndex], d.saveHandler.PlaySaves[selIndex+1:]...) // remove from buildsaves
+		d.modeTab.SetCurrentIndex(BUILD_MODE) // toggle to other mode to keep showing selected save
+		// propagation calls d.onModeTabChanged(BUILD_MODE)
 	}
 	if d.activeSave == nil && len(*d.activeSaves) > 0 {
 		d.activeSave = &(*d.activeSaves)[0]
 		d.activeSave.MoveToFirst()
 	}
-	d.onModeButtonClicked(true) // toggle to other mode to keep showing selected save
 	// re-select save
 	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
 	//d.onSaveSelectedChanged(len(*d.activeSaves)-1)
