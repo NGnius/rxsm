@@ -22,6 +22,8 @@ const (
 var (
   ForceGameCreator = false
   ForceGameCreatorTo = ""
+  ForceUniqueIds = false
+  UsedIds = newIdTracker()
   DefaultSaveFolder = "resources/default_save"
   TempNewSaveFolder = "tempsave"
 )
@@ -66,19 +68,8 @@ func (sv SaveHandler) BuildSaveFolderPath(id int) (string) {
   return filepath.Join(sv.buildPath, GameStart+DoubleDigitStr(id))
 }
 
-func (sv SaveHandler) MaxId() (max int) {
-  max = -1
-  for _, save := range sv.BuildSaves {
-    if max < save.Data.Id {
-      max = save.Data.Id
-    }
-  }
-  for _, save := range sv.PlaySaves {
-    if max < save.Data.Id {
-      max = save.Data.Id
-    }
-  }
-  return
+func (sv SaveHandler) MaxId() (int) {
+  return UsedIds.max()
 }
 
 func (sv SaveHandler) ActiveBuildSave() (as *Save) {
@@ -133,10 +124,20 @@ func NewSave(folder string) (Save, error) {
   if gdErr != nil {
     return newSave, gdErr
   }
+  // force unique ids
+  if UsedIds.contains(newSave.Data.Id) {
+    log.Println("Duplicate id "+strconv.Itoa(newSave.Data.Id))
+    if ForceUniqueIds {
+      newSave.Data.Id = UsedIds.max()+1
+      newSave.Data.Save()
+    }
+  }
+  UsedIds.add(newSave.Data.Id)
   return newSave, nil
 }
 
 func NewNewSave(folder string, id int) (newSave Save, err error) {
+  UsedIds.add(id) // TODO: check id is not already in use
   // duplicate default save
   stat, statErr := os.Stat(folder)
   if statErr != nil || os.IsNotExist(statErr) {
@@ -276,6 +277,54 @@ func (gd *GameData) Save() (error) {
   return nil
 }
 // end of GameData
+
+// start of idTracker
+
+type idTracker struct {
+  idMap map[int]bool
+  idArray []int
+}
+
+func newIdTracker() (*idTracker){
+  tracker := idTracker{idMap:map[int]bool{}}
+  return &tracker
+}
+
+func (it *idTracker) add(id int) {
+  it.idMap[id] = true
+  it.idArray = append(it.idArray, id)
+}
+
+func (it *idTracker) remove(id int) {
+  delete(it.idMap, id)
+  loc := it._location(id)
+  it.idArray = append(it.idArray[:loc], it.idArray[:loc+1]...)
+}
+
+func (it *idTracker) contains(id int) (bool) {
+  _, ok := it.idMap[id]
+  return ok
+}
+
+func (it *idTracker) max() (max int) {
+  for _, elem := range it.idArray {
+    if elem > max {
+      max = elem
+    }
+  }
+  return max
+}
+
+func (it *idTracker) _location(id int) (int){
+  for i, elem := range it.idArray {
+    if elem == id {
+      return i
+    }
+  }
+  return -1
+}
+
+// end of idTracker
 
 // helper functions
 

@@ -19,6 +19,7 @@ const (
   ConfigSaveFolder = "default_save"
   ConfigPlayPathEnding = "RobocraftX_Data/StreamingAssets/Games/Freejam"
   ConfigIconPath = "icon.svg"
+  ConfigForceUniqueIds = true
 )
 
 var configPath string = "config.json"
@@ -49,12 +50,14 @@ func init() {
     config.ForceCreator = false
     config.DefaultSaveFolder = ConfigSaveFolder
     config.IconPath = ConfigIconPath
+    config.ForceUniqueIds = ConfigForceUniqueIds
   } else {
     data, _ := ioutil.ReadAll(file)
     json.Unmarshal(data, &config)
   }
   ForceGameCreatorTo = config.Creator
   ForceGameCreator = config.ForceCreator
+  ForceUniqueIds = config.ForceUniqueIds
   if config.DefaultSaveFolder != "" {
     DefaultSaveFolder = config.DefaultSaveFolder
   }
@@ -97,6 +100,7 @@ type Config struct {
   LogPath string `json:"log"`
   DefaultSaveFolder string `json:"copyable-save"`
   IconPath string `json:"icon"`
+  ForceUniqueIds bool `json:"force-unique-ids?"`
 }
 
 func (c Config) Save() (error) {

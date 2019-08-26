@@ -5,5 +5,6 @@
   "force-creator?": false,
   "log": "log.txt",
   "copyable-save": "resources/default_save",
-  "icon": "resources/icon/rxsm-dual.svg"
+  "icon": "resources/icon/rxsm-dual.svg",
+  "force-unique-ids?": true
 }
