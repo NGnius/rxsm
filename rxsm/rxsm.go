@@ -58,6 +58,9 @@ func init() {
   if config.DefaultSaveFolder != "" {
     DefaultSaveFolder = config.DefaultSaveFolder
   }
+  if config.IconPath != "" {
+    IconPath = config.IconPath
+  }
   f, _ := os.Create(config.LogPath)
   log.Println("Log directed to "+config.LogPath)
   log.SetOutput(f)
@@ -70,9 +73,6 @@ func main() {
   config.Save()
   log.Println("RobocraftX Play Path: "+config.PlayPath)
   log.Println("RobocraftX Build Path: "+config.BuildPath)
-  if config.IconPath != "" {
-    IconPath = config.IconPath
-  }
   saveHandler := NewSaveHandler(config.PlayPath, config.BuildPath)
   activeDisplay = NewDisplay(saveHandler)
   activeDisplay.Start()
