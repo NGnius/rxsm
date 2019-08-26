@@ -18,6 +18,7 @@ rxsm/deploy/**
 
 # test data
 temp**
+test**
 
 # logs
 log.txt
@@ -26,3 +27,7 @@ log.txt
 # install stuff
 rxsm/vendor/**
 vendor/**
+
+# svg exports
+resources/icon/**.png
+resources/icon/**.jpg

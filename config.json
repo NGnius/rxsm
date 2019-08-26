@@ -4,5 +4,6 @@
   "creator": "unknown",
   "force-creator?": false,
   "log": "log.txt",
-  "copyable-save": "resources/default_save"
+  "copyable-save": "resources/default_save",
+  "icon": "resources/icon/rxsm-dual.svg"
 }

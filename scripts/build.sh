@@ -15,4 +15,6 @@ rm -f moc* # auto generated files
 mkdir ./deploy/linux/default_save
 cd ..
 cp ./resources/default_save/** ./rxsm/deploy/linux/default_save
+cp ./resources/icon/rxsm-dual.svg ./rxsm/deploy/linux/icon.svg
+cp ./resources/icon/rxsm-dual-notext.svg ./rxsm/deploy/linux/icon-min.svg
 exit 0

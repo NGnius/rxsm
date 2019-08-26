@@ -18,6 +18,7 @@ const (
 
 var (
 	NewInstallPath string
+	IconPath string = "icon.svg"
 )
 // start Display
 type IDisplayGoroutine interface {
@@ -151,9 +152,9 @@ func (d *Display) Run() {
 	centralWidget.SetLayout(masterLayout)
 	d.window.SetCentralWidget(centralWidget)
 
-	// TODO: make icon
-	//rxsmIcon := gui.NewQIcon5("path/to/icon")
-	//d.window.SetIcon(rxsmIcon)
+	// TODO: make rxsm logo icon
+	rxsmIcon := gui.NewQIcon5(IconPath)
+	d.app.SetWindowIcon(rxsmIcon)
 
 	d.window.Show()
 	if len(d.saveHandler.PlaySaves) == 0 { // automatically prompt for RCX location if not default

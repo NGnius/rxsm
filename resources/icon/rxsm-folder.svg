@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="16cm"
+   height="16cm"
+   viewBox="0 0 160 160"
+   version="1.1"
+   id="svg5253"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14"
+   sodipodi:docname="rxsm-folder.svg"
+   inkscape:export-filename="/home/ngnius/Documents/git-repos/rxsm/resources/icon/rxsm-folder16384x16384.png"
+   inkscape:export-xdpi="2600.96"
+   inkscape:export-ydpi="2600.96">
+  <defs
+     id="defs5247" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.3874089"
+     inkscape:cx="195.32815"
+     inkscape:cy="302.3622"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="cm"
+     inkscape:window-width="1920"
+     inkscape:window-height="1038"
+     inkscape:window-x="0"
+     inkscape:window-y="17"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata5250">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-137)">
+    <g
+       transform="matrix(1.5945438,0,0,1.5945438,-9.4748396,-180.07843)"
+       id="g5181-5">
+      <g
+         style="fill:#20c420;fill-opacity:1;stroke:#20c420;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         id="g5165-6">
+        <g
+           id="g5025-2"
+           style="fill:#20c420;fill-opacity:1;stroke:#20c420;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
+          <path
+             inkscape:connector-curvature="0"
+             id="path3813-9"
+             d="m 16.496134,217.4953 c 0,63.22738 0,63.00158 0,63.00158"
+             style="fill:#20c420;fill-opacity:1;stroke:#20c420;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+          <path
+             inkscape:connector-curvature="0"
+             id="path3815-1"
+             d="m 95.493091,280.50017 c 0,-47.15693 0,-47.00674 0,-47.00674"
+             style="fill:#20c420;fill-opacity:1;stroke:#20c420;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+          <path
+             inkscape:connector-curvature="0"
+             id="path3817-2"
+             d="m 16.506909,280.46487 c 78.986182,0.0353 78.986182,0.0353 78.986182,0.0353"
+             style="fill:#20c420;fill-opacity:1;stroke:#20c420;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+          <path
+             inkscape:connector-curvature="0"
+             id="path3817-5-7"
+             d="m 64.459854,233.41173 c 31.033237,0.0817 31.033237,0.0817 31.033237,0.0817"
+             style="fill:#20c420;fill-opacity:1;stroke:#20c420;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+          <path
+             inkscape:connector-curvature="0"
+             id="path3817-3-0"
+             d="m 16.483377,217.49924 c 31.033247,0.0817 31.033247,0.0817 31.033247,0.0817"
+             style="fill:#20c420;fill-opacity:1;stroke:#20c420;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+          <path
+             inkscape:connector-curvature="0"
+             id="path4647-9"
+             d="m 47.516623,217.58094 16.943229,15.83079"
+             style="fill:#20c420;fill-opacity:1;stroke:#20c420;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+        </g>
+        <path
+           style="fill:#20c420;fill-opacity:1;stroke:#20c420;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           d="m 16.75,248.88229 v -31.36765 l 10.891544,5.3e-4 c 5.990348,2.6e-4 12.914726,0.0577 15.387498,0.12758 l 4.495953,0.12714 8.571306,8.00477 8.571307,8.00477 H 80.208804 95.75 v 23.2353 23.2353 H 56.249999 16.75 Z"
+           id="path5027-3"
+           inkscape:connector-curvature="0" />
+      </g>
+      <rect
+         y="233.5036"
+         x="16.503572"
+         height="46.992855"
+         width="79.242439"
+         id="rect5169-6"
+         style="fill:#208020;fill-opacity:1;stroke:#208020;stroke-width:1.00756133;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:52.91666794px;line-height:1.25;font-family:'Liberation Sans';-inkscape-font-specification:'Liberation Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:0.50196081;stroke:none;stroke-width:0.26458332;"
+       x="78.021683"
+       y="245.68324"
+       id="text5302"><tspan
+         sodipodi:role="line"
+         id="tspan5300"
+         x="78.021683"
+         y="245.68324"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:52.91666794px;font-family:'Liberation Sans';-inkscape-font-specification:'Liberation Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:center;writing-mode:lr-tb;text-anchor:middle;stroke-width:0.26458332;fill:#000000;fill-opacity:0.50196081;">.RCX</tspan></text>
+  </g>
+</svg>

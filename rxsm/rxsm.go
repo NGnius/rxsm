@@ -18,6 +18,7 @@ const (
   ConfigLogPath = "rxsm.log"
   ConfigSaveFolder = "default_save"
   ConfigPlayPathEnding = "RobocraftX_Data/StreamingAssets/Games/Freejam"
+  ConfigIconPath = "icon.svg"
 )
 
 var configPath string = "config.json"
@@ -47,6 +48,7 @@ func init() {
     config.LogPath = ConfigLogPath
     config.ForceCreator = false
     config.DefaultSaveFolder = ConfigSaveFolder
+    config.IconPath = ConfigIconPath
   } else {
     data, _ := ioutil.ReadAll(file)
     json.Unmarshal(data, &config)
@@ -68,6 +70,9 @@ func main() {
   config.Save()
   log.Println("RobocraftX Play Path: "+config.PlayPath)
   log.Println("RobocraftX Build Path: "+config.BuildPath)
+  if config.IconPath != "" {
+    IconPath = config.IconPath
+  }
   saveHandler := NewSaveHandler(config.PlayPath, config.BuildPath)
   activeDisplay = NewDisplay(saveHandler)
   activeDisplay.Start()
@@ -91,6 +96,7 @@ type Config struct {
   ForceCreator bool `json:"force-creator?"`
   LogPath string `json:"log"`
   DefaultSaveFolder string `json:"copyable-save"`
+  IconPath string `json:"icon"`
 }
 
 func (c Config) Save() (error) {
