@@ -3,20 +3,21 @@ Robocraft X Save Manager; a save manager for RCX's 4th experiment
 
 ## Features
 
-* (Implemented) Save file swapping; load a second save file without having to manually move/rename files
-* (Implemented) Edit save info; load and save GameData.json, no text editor required!
-* (WIP) Game save downloader; download save files created by other players
-* (WIP) Save management; move (working for between community and creative modes), organise and compress save files
+* Activate a save in creative/build mode so RCX loads it
+* Edit save info & thumbnail without opening a file editor
+* Move a save between creative and community (build and play) game modes
+* Create a new save with a unique ID
+* Force unique IDs to avoid ID conflicts
 
 ## FAQ
 
 > **I don't see any saves when I start RXSM, how do I fix it?**
 
-*In v0.0.4 and before, you have to edit the `config.json` file with the correct install locations. [More info here](https://github.com/NGnius/rxsm/wiki/User-Guide#configuration). In the future, there will be a prompt on startup so you can fix it without getting your hands dirty.*
+*There should be a prompt on startup so you can fix this. If you need more information of it doesn't show up, [go here](https://github.com/NGnius/rxsm/wiki/User-Guide#configuration).*
 
 > **How do I use RXSM?**
 
-*You click things. Unless you're millions of years old, I'd expect you to know that much. For an overview of what all the clickable things do, check out the [user guide](https://github.com/NGnius/rxsm/wiki/User-Guide#usage).*
+*You click things. I understand RXSM seems like its a millions of years old, but I expect you know that much. For an overview of what all the clickable things do, check out the [user guide](https://github.com/NGnius/rxsm/wiki/User-Guide#usage).*
 
 > **Where can I report bugs?**
 
@@ -32,7 +33,7 @@ Robocraft X Save Manager; a save manager for RCX's 4th experiment
 
 ### Disclaimer
 
-RXSM is maintained by NGnius and developed by enthusiastic community members.
+RXSM is maintained by NGnius and developed by enthusiastic community members (mainly NGnius).
 RXSM is not affiliated with FreeJam, RobocraftX or any other company, including but not limited to prehistoric-juice-pumping corporations.
 
 Third-party libraries in this project:
