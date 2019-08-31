@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"log"
 	"os"
+	"time" // import performance stats
 
 	"github.com/therecipe/qt/widgets"
 	"github.com/therecipe/qt/gui"
@@ -41,10 +42,8 @@ type Display struct {
 	window *widgets.QMainWindow
 	app *widgets.QApplication
 	modeTab *widgets.QTabBar
-	/* TODO: import and export buttons + functionality
-	importButton *widget.QPushButton2
-	exportButton *widget.QPushButton2
-	*/
+	importButton *widgets.QPushButton
+	exportButton *widgets.QPushButton
 	saveSelector *widgets.QComboBox
 	newSaveButton *widgets.QPushButton
 	nameField *widgets.QLineEdit
@@ -87,6 +86,10 @@ func (d *Display) Run() {
 	d.window.SetWindowTitle("rxsm")
 	d.modeTab = widgets.NewQTabBar(nil)
 	d.modeTab.ConnectCurrentChanged(d.onModeTabChanged)
+	d.importButton = widgets.NewQPushButton2("Import", nil)
+	d.importButton.ConnectClicked(d.onImportButtonClicked)
+	d.exportButton = widgets.NewQPushButton2("Export", nil)
+	d.exportButton.ConnectClicked(d.onExportButtonClicked)
 
 	d.saveSelector = widgets.NewQComboBox(nil)
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
@@ -125,6 +128,10 @@ func (d *Display) Run() {
 	headerLayout.AddWidget3(d.saveSelector, 1, 0, 1, 5, 0)
 	headerLayout.AddWidget3(d.newSaveButton, 1, 5, 1, 1, 0)
 
+	portLayout := widgets.NewQGridLayout2()
+	portLayout.AddWidget2(d.importButton, 0, 0, 0)
+	portLayout.AddWidget2(d.exportButton, 0, 1, 0)
+
 	infoLayout := widgets.NewQGridLayout2()
 	infoLayout.AddWidget3(d.activateCheckbox, 0, 0, 1, 3, 0x0004)
 	infoLayout.AddWidget3(d.idLabel, 0, 3, 1, 2, 0)
@@ -144,15 +151,15 @@ func (d *Display) Run() {
 
 	masterLayout := widgets.NewQGridLayout2()
 	masterLayout.AddLayout(headerLayout, 0, 0, 0)
-	masterLayout.AddLayout(infoLayout, 1, 0, 0)
-	masterLayout.AddLayout(descriptionLayout, 2, 0, 0)
-	masterLayout.AddLayout(bottomButtons, 3, 0, 0)
+	masterLayout.AddLayout(portLayout, 1, 0, 0)
+	masterLayout.AddLayout(infoLayout, 2, 0, 0)
+	masterLayout.AddLayout(descriptionLayout, 3, 0, 0)
+	masterLayout.AddLayout(bottomButtons, 4, 0, 0)
 
 	centralWidget := widgets.NewQWidget(d.window, 0)
 	centralWidget.SetLayout(masterLayout)
 	d.window.SetCentralWidget(centralWidget)
 
-	// TODO: make rxsm logo icon
 	rxsmIcon := gui.NewQIcon5(IconPath)
 	d.app.SetWindowIcon(rxsmIcon)
 
@@ -189,7 +196,7 @@ func (d *Display) populateFields() {
 	d.creatorField.SetText(d.selectedSave.Data.Creator)
 	d.idLabel.SetText("ID: "+DoubleDigitStr(d.selectedSave.Data.Id))
 	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
-	d.thumbnailImage.Swap(gui.NewQIcon5(d.selectedSave.ThumbnailPath))
+	d.thumbnailImage.Swap(gui.NewQIcon5(d.selectedSave.ThumbnailPath()))
 	d.thumbnailButton.SetIcon(d.thumbnailImage)
 	if d.activeSave == d.selectedSave {
 		d.activateCheckbox.SetCheckState(2)
@@ -203,10 +210,10 @@ func (d *Display) syncBackFields() {
 	d.selectedSave.Data.Creator = d.creatorField.Text()
 	d.selectedSave.Data.Description = d.descriptionField.ToPlainText()
 	// copy thumbnail to save location
-	if d.temporaryThumbnailPath != d.selectedSave.ThumbnailPath && d.temporaryThumbnailPath != "" {
-		copyErr := d.saveHandler.CopyTo(d.temporaryThumbnailPath, d.selectedSave.ThumbnailPath)
+	if d.temporaryThumbnailPath != d.selectedSave.ThumbnailPath() && d.temporaryThumbnailPath != "" {
+		copyErr := d.saveHandler.CopyTo(d.temporaryThumbnailPath, d.selectedSave.ThumbnailPath())
 		if copyErr != nil {
-			log.Print("Error while copying Thumbnail from "+d.temporaryThumbnailPath+" to "+d.selectedSave.ThumbnailPath)
+			log.Print("Error while copying Thumbnail from "+d.temporaryThumbnailPath+" to "+d.selectedSave.ThumbnailPath())
 			log.Println(copyErr)
 		}
 		d.temporaryThumbnailPath = ""
@@ -277,16 +284,73 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 		}
 		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, newSave)
 	}
-	d.saveSelector.AddItems([]string{newSave.Data.Name})
+	d.saveSelector.AddItems(makeSelectorOptions([]Save{newSave}))
 	log.Println("Created new save "+strconv.Itoa(newSave.Data.Id))
 	// select newly created save
 	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
 	// propagation calls d.onSaveSelectedChanged(len(*d.activeSaves)-1)
 }
 
+func (d *Display) onImportButtonClicked(bool) {
+	var fileDialog *widgets.QFileDialog = widgets.NewQFileDialog(nil, 0)
+	importPath := fileDialog.GetOpenFileName(d.window, "Select the file to import", "", "Zip Archive (*.zip);;Any File (*.*)", "", 0)
+	if importPath != "" {
+		importStart := time.Now()
+		importedSaves, importErr := Import(importPath)
+		if importErr != nil {
+			log.Println("Import from "+importPath+" failed")
+			log.Println(importErr)
+			return
+		}
+		switch d.activeMode {
+		case BUILD_MODE:
+			for _, save := range importedSaves {
+				moveErr := save.Move(d.saveHandler.BuildSaveFolderPath(save.Data.Id))
+				if moveErr != nil {
+					log.Println("Error while moving save "+strconv.Itoa(save.Data.Id))
+					log.Println(moveErr)
+				} else {
+					d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, *save)
+					d.saveSelector.AddItems(makeSelectorOptions([]Save{*save}))
+				}
+
+			}
+		case PLAY_MODE:
+			for _, save := range importedSaves {
+				moveErr := save.Move(d.saveHandler.PlaySaveFolderPath(save.Data.Id))
+				log.Println(save.ThumbnailPath())
+				if moveErr != nil {
+					log.Println("Error while moving save "+strconv.Itoa(save.Data.Id))
+				} else {
+					d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, *save)
+					d.saveSelector.AddItems(makeSelectorOptions([]Save{*save}))
+				}
+			}
+		}
+		log.Println("Imported "+strconv.Itoa(len(importedSaves))+" saves in "+strconv.FormatFloat(time.Since(importStart).Seconds(), 'f', -1, 64)+"s")
+	}
+}
+
+func (d *Display) onExportButtonClicked(bool) {
+	var fileDialog *widgets.QFileDialog = widgets.NewQFileDialog(nil, 0)
+	exportPath := fileDialog.GetSaveFileName(d.window, "Select the export location", "", "Zip Archive (*.zip)", "", 0)
+	if exportPath != "" {
+		exportErr := Export(exportPath, *d.selectedSave)
+		if exportErr != nil {
+			log.Println("Export to "+exportPath+" failed for "+strconv.Itoa(d.selectedSave.Data.Id))
+			log.Println(exportErr)
+			return
+		} else {
+			log.Println("Exported save "+strconv.Itoa(d.selectedSave.Data.Id)+" to "+exportPath)
+		}
+	} else {
+		log.Println("Export file dialog dismissed")
+	}
+}
+
 func (d *Display) onThumbnailButtonClicked(bool) {
 	var fileDialog *widgets.QFileDialog = widgets.NewQFileDialog(nil, 0)
-	d.temporaryThumbnailPath = fileDialog.GetOpenFileName(d.window, "Select a new thumbnail", d.selectedSave.ThumbnailPath, "Images (*.jpg)", "", 0)
+	d.temporaryThumbnailPath = fileDialog.GetOpenFileName(d.window, "Select a new thumbnail", d.selectedSave.ThumbnailPath(), "Images (*.jpg)", "", 0)
 	if d.temporaryThumbnailPath != "" {
 		d.thumbnailImage.Swap(gui.NewQIcon5(d.temporaryThumbnailPath))
 		d.thumbnailButton.SetIcon(d.thumbnailImage)
@@ -313,7 +377,6 @@ func (d *Display) onCancelButtonClicked(bool) {
 }
 
 func (d *Display) onActivateChecked(checkState int) {
-	// TODO: implement check behaviour
 	if d.activeMode == PLAY_MODE {
 		log.Println("Hey buddy, you can't activate a play save")
 		return // activating a play save is pointless

@@ -9,6 +9,7 @@ import (
   "path/filepath"
   "encoding/json"
   "strconv"
+  "sync"
   "log"
 )
 
@@ -109,7 +110,7 @@ type Save struct {
   Data *GameData
   dataPath string
   savePath string
-  ThumbnailPath string
+  thumbnailPath string
   folder string
 }
 
@@ -117,7 +118,7 @@ func NewSave(folder string) (Save, error) {
   newSave := Save {
     dataPath: filepath.Join(folder, GameDataFile),
     savePath: filepath.Join(folder, GameSaveFile),
-    ThumbnailPath: filepath.Join(folder, ThumbnailFile),
+    thumbnailPath: filepath.Join(folder, ThumbnailFile),
     folder: folder}
   newGD, gdErr := NewGameData(newSave.dataPath)
   newSave.Data = newGD
@@ -188,7 +189,7 @@ func (s *Save) Move(to string) (error) {
   s.dataPath = filepath.Join(to, GameDataFile)
   s.Data.path = s.dataPath
   s.savePath = filepath.Join(to, GameSaveFile)
-  s.ThumbnailPath = filepath.Join(to, ThumbnailFile)
+  s.thumbnailPath = filepath.Join(to, ThumbnailFile)
   return nil
 }
 
@@ -229,6 +230,18 @@ func (s *Save) MoveOut() (error) {
     }
   }
   return s.Move(lastDir)
+}
+
+func (s *Save) DataPath() (string) {
+  return s.dataPath
+}
+
+func (s *Save) SavePath() (string) {
+  return s.savePath
+}
+
+func (s *Save) ThumbnailPath() (string) {
+  return s.thumbnailPath
 }
 // end Save
 
@@ -283,6 +296,7 @@ func (gd *GameData) Save() (error) {
 type idTracker struct {
   idMap map[int]bool
   idArray []int
+  lock sync.Mutex
 }
 
 func newIdTracker() (*idTracker){
@@ -291,22 +305,30 @@ func newIdTracker() (*idTracker){
 }
 
 func (it *idTracker) add(id int) {
+  it.lock.Lock()
   it.idMap[id] = true
   it.idArray = append(it.idArray, id)
+  it.lock.Unlock()
 }
 
 func (it *idTracker) remove(id int) {
+  it.lock.Lock()
   delete(it.idMap, id)
   loc := it._location(id)
   it.idArray = append(it.idArray[:loc], it.idArray[:loc+1]...)
+  it.lock.Unlock()
 }
 
 func (it *idTracker) contains(id int) (bool) {
+  it.lock.Lock()
   _, ok := it.idMap[id]
+  it.lock.Unlock()
   return ok
 }
 
 func (it *idTracker) max() (max int) {
+  it.lock.Lock()
+  defer it.lock.Unlock()
   for _, elem := range it.idArray {
     if elem > max {
       max = elem

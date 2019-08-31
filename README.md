@@ -1,5 +1,5 @@
 # rxsm
-Robocraft X Save Manager; a save manager for RCX's 4th experiment
+Robocraft X Save Manager; a save manager for RobocraftX
 
 ## Features
 
@@ -8,12 +8,13 @@ Robocraft X Save Manager; a save manager for RCX's 4th experiment
 * Move a save between creative and community (build and play) game modes
 * Create a new save with a unique ID
 * Force unique IDs to avoid ID conflicts
+* Import and export zip files of save(s)
 
 ## FAQ
 
 > **I don't see any saves when I start RXSM, how do I fix it?**
 
-*There should be a prompt on startup so you can fix this. If you need more information of it doesn't show up, [go here](https://github.com/NGnius/rxsm/wiki/User-Guide#configuration).*
+*There should be a prompt on startup so you can fix this. If you need more information or it doesn't show up, [go here](https://github.com/NGnius/rxsm/wiki/User-Guide#configuration).*
 
 > **How do I use RXSM?**
 
