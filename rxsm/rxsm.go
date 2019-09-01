@@ -64,9 +64,6 @@ func init() {
   if config.IconPath != "" {
     IconPath = config.IconPath
   }
-  if config.ImportTempFolder != "" {
-    ImportTempFolder = config.ImportTempFolder
-  }
   f, _ := os.Create(config.LogPath)
   log.Println("Log directed to "+config.LogPath)
   log.SetOutput(f)
@@ -104,7 +101,6 @@ type Config struct {
   DefaultSaveFolder string `json:"copyable-save"`
   IconPath string `json:"icon"`
   ForceUniqueIds bool `json:"force-unique-ids?"`
-  ImportTempFolder string `json:"import-tmp-path"`
 }
 
 func (c Config) Save() (error) {

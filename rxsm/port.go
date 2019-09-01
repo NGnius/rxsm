@@ -13,10 +13,6 @@ import (
   "log"
 )
 
-var (
-  ImportTempFolder = filepath.FromSlash("import-temp")
-)
-
 // NOTE: zip requires forward slashes (/) no matter the OS
 // If only Windows worked like that...
 
@@ -61,7 +57,7 @@ func Export(path string, save Save) (error) {
   return thumbWriteErr
 }
 
-func Import(path string) (saves []*Save, err error) {
+func Import(path string, outFolder string) (saves []*Save, err error) {
   // Load the saves contained in a zip archive located at path
   var readCloser *zip.ReadCloser
   readCloser, err = zip.OpenReader(path)
@@ -85,7 +81,7 @@ func Import(path string) (saves []*Save, err error) {
       candidates[baseFolder] = submap
     }
   }
-  err = os.MkdirAll(ImportTempFolder, os.ModeDir | os.ModePerm)
+  err = os.MkdirAll(outFolder, os.ModeDir | os.ModePerm)
   if err != nil {
     return
   }
@@ -94,7 +90,7 @@ func Import(path string) (saves []*Save, err error) {
     _, ok := fileMap[GameSaveFile]
     if ok {
       forcedId := UsedIds.max()+1+workers
-      tmpFolder := filepath.Join(ImportTempFolder, GameStart+strconv.Itoa(forcedId))
+      tmpFolder := filepath.Join(outFolder, GameStart+strconv.Itoa(forcedId))
       go extractSaveWorker(tmpFolder, fileMap, resultChan, forcedId)
       workers ++
     }
@@ -108,19 +104,21 @@ func Import(path string) (saves []*Save, err error) {
   return
 }
 
-func extractSaveWorker(tmpFolder string, fileMap map[string]*zip.File, outChan chan *Save, forcedId int) {
+func extractSaveWorker(outFolder string, fileMap map[string]*zip.File, outChan chan *Save, forcedId int) {
   // extracts save files to correct folder
   // replace missing data with data from DefaultSaveFolder
   // extract/create GameData.json
-  makeDirErr := os.Mkdir(tmpFolder, os.ModeDir | os.ModePerm)
+  makeDirErr := os.Mkdir(outFolder, os.ModeDir | os.ModePerm)
   if makeDirErr != nil {
+    os.RemoveAll(outFolder)
     log.Println("Failed to make extraction target directory")
     log.Println(makeDirErr)
     outChan <- nil
     return
   }
-  gameDataErr := extractOrCreateFile(tmpFolder, fileMap, GameDataFile)
+  gameDataErr := extractOrCreateFile(outFolder, fileMap, GameDataFile)
   if gameDataErr != nil {
+    os.RemoveAll(outFolder)
     log.Println("GameData extraction/create err")
     log.Println(gameDataErr)
     outChan <- nil
@@ -130,14 +128,16 @@ func extractSaveWorker(tmpFolder string, fileMap map[string]*zip.File, outChan c
   gameSaveSrc, sOpenErr := fileMap[GameSaveFile].Open() // assume exists
   defer gameSaveSrc.Close()
   if sOpenErr != nil {
+    os.RemoveAll(outFolder)
     log.Println("GameSave open err")
     log.Println(sOpenErr)
     outChan <- nil
     return
   }
-  gameSaveDest, sCreateErr := os.Create(filepath.Join(tmpFolder, GameSaveFile))
+  gameSaveDest, sCreateErr := os.Create(filepath.Join(outFolder, GameSaveFile))
   defer gameSaveDest.Close()
   if sCreateErr != nil {
+    os.RemoveAll(outFolder)
     log.Println("GameSave create err")
     log.Println(sCreateErr)
     outChan <- nil
@@ -145,22 +145,25 @@ func extractSaveWorker(tmpFolder string, fileMap map[string]*zip.File, outChan c
   }
   _, sCopyErr := io.Copy(gameSaveDest, gameSaveSrc)
   if sCopyErr != nil {
+    os.RemoveAll(outFolder)
     log.Println("GameSave copy err")
     log.Println(sCopyErr)
     outChan <- nil
     return
   }
   // extract/create Thumbnail.jpg
-  thumbnailErr := extractOrCreateFile(tmpFolder, fileMap, ThumbnailFile)
+  thumbnailErr := extractOrCreateFile(outFolder, fileMap, ThumbnailFile)
   if thumbnailErr != nil {
+    os.RemoveAll(outFolder)
     log.Println("Thumbnail extract/create err")
     log.Println(thumbnailErr)
     outChan <- nil
     return
   }
   // create save
-  newSave, newSaveErr := NewSave(tmpFolder)
+  newSave, newSaveErr := NewSave(outFolder)
   if newSaveErr != nil {
+    os.RemoveAll(outFolder)
     log.Println("Extracted Save load err")
     log.Println(newSaveErr)
     outChan <- nil

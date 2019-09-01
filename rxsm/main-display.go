@@ -331,37 +331,32 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 func (d *Display) onImportButtonClicked(bool) {
 	var fileDialog *widgets.QFileDialog = widgets.NewQFileDialog(nil, 0)
 	importPath := fileDialog.GetOpenFileName(d.window, "Select the file to import", "", "Zip Archive (*.zip);;Any File (*.*)", "", 0)
+	var importedSaves []*Save
+	var importErr error
 	if importPath != "" {
 		importStart := time.Now()
-		importedSaves, importErr := Import(importPath)
-		if importErr != nil {
-			log.Println("Import from "+importPath+" failed")
-			log.Println(importErr)
-			return
-		}
 		switch d.activeMode {
 		case BUILD_MODE:
+			importedSaves, importErr = Import(importPath, d.saveHandler.BuildPath())
+			if importErr != nil {
+				log.Println("Import from "+importPath+" to "+d.saveHandler.BuildPath()+" failed")
+				log.Println(importErr)
+				return
+			}
 			for _, save := range importedSaves {
-				moveErr := save.Move(d.saveHandler.BuildSaveFolderPath(save.Data.Id))
-				if moveErr != nil {
-					log.Println("Error while moving save "+strconv.Itoa(save.Data.Id))
-					log.Println(moveErr)
-				} else {
-					d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, *save)
-					d.saveSelector.AddItems(makeSelectorOptions([]Save{*save}))
-				}
-
+				d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, *save)
+				d.saveSelector.AddItems(makeSelectorOptions([]Save{*save}))
 			}
 		case PLAY_MODE:
+			importedSaves, importErr = Import(importPath, d.saveHandler.PlayPath())
+			if importErr != nil {
+				log.Println("Import from "+importPath+" to "+d.saveHandler.PlayPath()+" failed")
+				log.Println(importErr)
+				return
+			}
 			for _, save := range importedSaves {
-				moveErr := save.Move(d.saveHandler.PlaySaveFolderPath(save.Data.Id))
-				log.Println(save.ThumbnailPath())
-				if moveErr != nil {
-					log.Println("Error while moving save "+strconv.Itoa(save.Data.Id))
-				} else {
-					d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, *save)
-					d.saveSelector.AddItems(makeSelectorOptions([]Save{*save}))
-				}
+				d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, *save)
+				d.saveSelector.AddItems(makeSelectorOptions([]Save{*save}))
 			}
 		}
 		log.Println("Imported "+strconv.Itoa(len(importedSaves))+" saves in "+strconv.FormatFloat(time.Since(importStart).Seconds(), 'f', -1, 64)+"s")

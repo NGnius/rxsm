@@ -6,6 +6,5 @@
   "log": "log.txt",
   "copyable-save": "resources/default_save",
   "icon": "resources/icon/rxsm-dual.svg",
-  "force-unique-ids?": true,
-  "import-tmp-path": "test-data/import-tmp"
+  "force-unique-ids?": true
 }

@@ -108,6 +108,14 @@ func (sv SaveHandler) CopyTo(from string, to string) (copyErr error) {
   out.Close()
   return
 }
+
+func (sv SaveHandler) PlayPath() (string) {
+  return sv.playPath
+}
+
+func (sv SaveHandler) BuildPath() (string) {
+  return sv.buildPath
+}
 // end of SaveHandler
 
 // start Save
