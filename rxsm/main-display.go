@@ -45,6 +45,7 @@ type Display struct {
 	importButton *widgets.QPushButton
 	exportButton *widgets.QPushButton
 	saveSelector *widgets.QComboBox
+	copySaveButton *widgets.QPushButton
 	newSaveButton *widgets.QPushButton
 	nameField *widgets.QLineEdit
 	creatorLabel *widgets.QLabel
@@ -94,6 +95,8 @@ func (d *Display) Run() {
 	d.saveSelector = widgets.NewQComboBox(nil)
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
 	d.saveSelector.ConnectCurrentIndexChanged(d.onSaveSelectedChanged)
+	d.copySaveButton = widgets.NewQPushButton2("Copy", nil)
+	d.copySaveButton.ConnectClicked(d.onCopySaveButtonClicked)
 	d.newSaveButton = widgets.NewQPushButton2("New", nil)
 	d.newSaveButton.ConnectClicked(d.onNewSaveButtonClicked)
 
@@ -102,7 +105,7 @@ func (d *Display) Run() {
 	d.creatorField = widgets.NewQLineEdit(nil)
 	d.thumbnailImage = gui.NewQIcon5("")
 	d.thumbnailButton = widgets.NewQPushButton2("", d.window)
-	d.thumbnailButton.SetSizePolicy(widgets.NewQSizePolicy2(4, 1, 0x00000001))
+	d.thumbnailButton.SetSizePolicy(widgets.NewQSizePolicy2(2, 1, 0x00000001))
 	d.thumbnailButton.ConnectClicked(d.onThumbnailButtonClicked)
 	d.thumbnailButton.SetIconSize(d.thumbnailButton.Size())
 	d.idLabel = widgets.NewQLabel2("ID: ##", nil, 0)
@@ -126,15 +129,17 @@ func (d *Display) Run() {
 	headerLayout := widgets.NewQGridLayout2()
 	headerLayout.AddWidget3(d.modeTab, 0, 0, 1, 6, 0)
 	headerLayout.AddWidget3(d.saveSelector, 1, 0, 1, 5, 0)
+	//headerLayout.AddWidget3(d.copySaveButton, 1, 4, 1, 1, 0)
 	headerLayout.AddWidget3(d.newSaveButton, 1, 5, 1, 1, 0)
 
 	portLayout := widgets.NewQGridLayout2()
 	portLayout.AddWidget2(d.importButton, 0, 0, 0)
 	portLayout.AddWidget2(d.exportButton, 0, 1, 0)
+	portLayout.AddWidget2(d.copySaveButton, 0, 2, 0)
 
 	infoLayout := widgets.NewQGridLayout2()
 	infoLayout.AddWidget3(d.activateCheckbox, 0, 0, 1, 3, 0x0004)
-	infoLayout.AddWidget3(d.idLabel, 0, 3, 1, 2, 0)
+	infoLayout.AddWidget3(d.idLabel, 0, 3, 1, 1, 0)
 	infoLayout.AddWidget3(d.nameField, 1, 0, 1, 4, 0)
 	infoLayout.AddWidget3(d.thumbnailButton, 0, 4, 3, 2, 0)
 	infoLayout.AddWidget2(d.creatorLabel, 2, 0, 0x0004)
@@ -260,6 +265,38 @@ func (d *Display) onSaveSelectedChanged(index int) {
 	d.selectedSave = &(*d.activeSaves)[index]
 	d.populateFields()
 	log.Println("Selected "+strconv.Itoa(d.selectedSave.Data.Id))
+}
+
+func (d *Display) onCopySaveButtonClicked(bool) {
+	// very similar to onNewSaveButtonClicked
+	newId := d.saveHandler.MaxId() + 1
+	var dupSave Save
+	var dupSaveErr error
+	switch d.activeMode {
+	case BUILD_MODE:
+		newFolder := d.saveHandler.BuildSaveFolderPath(newId)
+		dupSave, dupSaveErr = d.selectedSave.Duplicate(newFolder, newId)
+		if dupSaveErr != nil {
+			log.Println("Error while duplicating save")
+			log.Println(dupSaveErr)
+			return
+		}
+		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, dupSave)
+	case PLAY_MODE:
+		newFolder := d.saveHandler.PlaySaveFolderPath(newId)
+		dupSave, dupSaveErr = d.selectedSave.Duplicate(newFolder, newId)
+		if dupSaveErr != nil {
+			log.Println("Error while duplicating save")
+			log.Println(dupSaveErr)
+			return
+		}
+		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, dupSave)
+	}
+	d.saveSelector.AddItems(makeSelectorOptions([]Save{dupSave}))
+	log.Println("Copied save "+strconv.Itoa(d.selectedSave.Data.Id)+" to "+strconv.Itoa(dupSave.Data.Id))
+	// select copied save
+	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
+	// propagation calls d.onSaveSelectedChanged(len(*d.activeSaves)-1)
 }
 
 func (d *Display) onNewSaveButtonClicked(bool) {

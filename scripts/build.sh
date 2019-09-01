@@ -17,5 +17,5 @@ cd ..
 cp ./resources/default_save/** ./rxsm/deploy/linux/default_save
 cp ./resources/icon/rxsm-dual.svg ./rxsm/deploy/linux/icon.svg
 cp ./resources/icon/rxsm-dual-notext.svg ./rxsm/deploy/linux/icon-min.svg
-cp README.md ./rxsm/deploy/windows/INFO.md
+cp README.md ./rxsm/deploy/linux/INFO.md
 exit 0

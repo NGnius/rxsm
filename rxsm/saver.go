@@ -27,6 +27,11 @@ var (
   UsedIds = newIdTracker()
   DefaultSaveFolder = "resources/default_save"
   TempNewSaveFolder = "tempsave"
+  AppendOnCopy = true
+  StringToAppendOnCopy = " (copy)"
+  AppendOnNew = true
+  StringToAppendOnNew = " (new)"
+  DefaultSavePointer *Save
 )
 
 // start of SaveHandler
@@ -138,28 +143,44 @@ func NewSave(folder string) (Save, error) {
 }
 
 func NewNewSave(folder string, id int) (newSave Save, err error) {
-  UsedIds.add(id) // TODO: check id is not already in use
   // duplicate default save
-  stat, statErr := os.Stat(folder)
-  if statErr != nil || os.IsNotExist(statErr) {
-    err = os.MkdirAll(folder, os.ModeDir|os.ModePerm)
+  if DefaultSavePointer == nil { // init if necessary
+    var tmpSave Save
+    tmpSave, err = NewSave(DefaultSaveFolder)
     if err != nil {
       return
     }
+    DefaultSavePointer = &tmpSave
   }
-  if statErr == nil && !stat.IsDir() {
-    log.Println("temp dir exists but is not folder, NewNewSave may fail with no error")
+  newSave, err = DefaultSavePointer.Duplicate(folder, id)
+  if err != nil {
+    return
   }
+  if AppendOnNew {
+    newSave.Data.Name = DefaultSavePointer.Data.Name + StringToAppendOnNew
+    newSave.Data.Save()
+  }
+  return
+}
+
+func (s *Save) Duplicate(newFolder string, id int) (newSave Save, err error){
+  err = os.MkdirAll(newFolder, os.ModeDir|os.ModePerm)
+  if err != nil {
+    return
+  }
+  UsedIds.add(id)
   toDuplicate := [][]string { // { {source, dest}, ...}
-    []string {filepath.Join(DefaultSaveFolder, GameDataFile), filepath.Join(folder, GameDataFile)},
-    []string {filepath.Join(DefaultSaveFolder, GameSaveFile), filepath.Join(folder, GameSaveFile)},
-    []string {filepath.Join(DefaultSaveFolder, ThumbnailFile), filepath.Join(folder, ThumbnailFile)}}
+    []string {s.dataPath, filepath.Join(newFolder, GameDataFile)},
+    []string {s.savePath, filepath.Join(newFolder, GameSaveFile)},
+    []string {s.thumbnailPath, filepath.Join(newFolder, ThumbnailFile)}}
   for _, dupPair := range toDuplicate {
     src, openErr := os.Open(dupPair[0])
+    defer src.Close()
     if openErr != nil {
       return newSave, openErr
     }
     dst, openErr := os.Create(dupPair[1])
+    defer dst.Close()
     if openErr != nil {
       return newSave, openErr
     }
@@ -168,14 +189,16 @@ func NewNewSave(folder string, id int) (newSave Save, err error) {
       return
     }
     dst.Sync()
-    dst.Close()
   }
   // load copied save
-  newSave, err = NewSave(folder)
+  newSave, err = NewSave(newFolder)
   if err != nil {
     return
   }
   newSave.Data.Id = id
+  if AppendOnCopy {
+    newSave.Data.Name += StringToAppendOnCopy
+  }
   err = newSave.Data.Save()
   return
 }

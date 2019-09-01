@@ -143,7 +143,7 @@ func extractSaveWorker(tmpFolder string, fileMap map[string]*zip.File, outChan c
     outChan <- nil
     return
   }
-  sCopyErr := ioCopy(gameSaveSrc, gameSaveDest)
+  _, sCopyErr := io.Copy(gameSaveDest, gameSaveSrc)
   if sCopyErr != nil {
     log.Println("GameSave copy err")
     log.Println(sCopyErr)
@@ -190,7 +190,7 @@ func extractOrCreateFile(outFolder string, fileMap map[string]*zip.File, name st
   if dataSrcOpenErr != nil {
     return dataSrcOpenErr
   }
-  copyErr := ioCopy(dataSrc, dataDest)
+  _, copyErr := io.Copy(dataDest, dataSrc)
   if copyErr != nil {
     return copyErr
   }
@@ -228,6 +228,7 @@ func writeToPath(path string, data []byte) (err error) {
   return
 }
 
+/*
 func ioCopy(src io.Reader, dest io.Writer) (error){
   data, readErr := ioutil.ReadAll(src)
   if readErr != nil {
@@ -238,4 +239,4 @@ func ioCopy(src io.Reader, dest io.Writer) (error){
     return writeErr
   }
   return nil
-}
+}*/
