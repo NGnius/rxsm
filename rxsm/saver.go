@@ -290,7 +290,8 @@ func NewGameData(path string) (*GameData, error) {
     return &gd, openErr
   }
   data, _ := ioutil.ReadAll(f)
-  marshErr := json.Unmarshal(data, &gd)
+  cleanData := cleanJsonBytes(data)
+  marshErr := json.Unmarshal(cleanData, &gd)
   if marshErr != nil {
     return &gd, marshErr
   }
@@ -408,4 +409,34 @@ func DoubleDigitStr(id int) string {
     result = "0" + result
   }
   return result
+}
+
+func cleanJsonBytes(data []byte) (cleanData []byte) {
+  var isInString bool = false
+  // clean data; replace '\r' with '\\r', etc.
+  double_quote := ([]byte("\""))[0]
+  carriage_return := ([]byte("\r"))[0]
+  page_return := ([]byte("\n"))[0]
+  tab := ([]byte("\t"))[0]
+  backslash := ([]byte("\\"))[0]
+  for i, b := range data {
+    if b == double_quote && data[i-1] != backslash {
+      isInString = !isInString
+    }
+    if isInString {
+      switch b {
+      case carriage_return:
+        cleanData = append(cleanData, backslash, ([]byte("r"))[0])
+      case page_return:
+        cleanData = append(cleanData, backslash, ([]byte("n"))[0])
+      case tab:
+        cleanData = append(cleanData, backslash, ([]byte("t"))[0])
+      default:
+        cleanData = append(cleanData, b)
+      }
+    } else {
+      cleanData = append(cleanData, b)
+    }
+  }
+  return
 }
