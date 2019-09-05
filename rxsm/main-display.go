@@ -98,6 +98,7 @@ func (d *Display) Run() {
 		d.settingsIcon = fallBackIcon
 	}
 	d.settingsButton.SetIcon(d.settingsIcon)
+	d.settingsButton.SetToolTip("Settings")
 	d.settingsButton.ConnectClicked(d.onSettingsButtonClicked)
 	d.importButton = widgets.NewQPushButton2("Import", nil)
 	d.importButton.ConnectClicked(d.onImportButtonClicked)
