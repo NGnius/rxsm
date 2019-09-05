@@ -4,117 +4,56 @@ package main
 
 import (
   "os"
-  "encoding/json"
   "path/filepath"
-  "runtime"
-  "io/ioutil"
   "log"
+  "runtime"
   //"fmt"
 )
 
 const (
-  // config defaults
-  ConfigCreator = "unknown"
-  ConfigLogPath = "rxsm.log"
-  ConfigSaveFolder = "default_save"
-  ConfigPlayPathEnding = "RobocraftX_Data/StreamingAssets/Games/Freejam"
-  ConfigIconPath = "icon.svg"
-  ConfigForceUniqueIds = true
+  RXSMVersion string = "v0.2.0"
 )
-
-var configPath string = "config.json"
-var config Config
 
 var activeDisplay IDisplayGoroutine
 
 func init() {
   log.Println("Starting init")
   // load config file
-  file, openErr := os.Open(configPath)
-  if openErr != nil {
-    // no config file found, use default config
-    if runtime.GOOS == "windows" {
-      config.BuildPath = filepath.FromSlash(os.Getenv("APPDATA")+"/../LocalLow/Freejam/RobocraftX/Games")
-      config.PlayPath = filepath.FromSlash("C:/Program Files (x86)/Steam/steamapps/common/RobocraftX/"+ConfigPlayPathEnding)
-    } else if runtime.GOOS == "linux" {
-      config.BuildPath = filepath.FromSlash("~/.local/share/Steam/steamapps/compatdata/1078000/pfx/drive_c/users/steamuser/AppData/LocalLow/Freejam/RobocraftX/Games")
-      config.PlayPath = filepath.FromSlash("~/.local/share/Steam/steamapps/common/RobocraftX/"+ConfigPlayPathEnding)
-    } else if runtime.GOOS == "darwin" { // macOS
-      // support doesn't really matter until SteamPlay or FJ supports MacOS
-      log.Fatal("OS detected as macOS (unsupported)")
-    } else {
-      log.Fatal("No default config for OS: "+runtime.GOOS)
-    }
-    config.Creator = ConfigCreator
-    config.LogPath = ConfigLogPath
-    config.ForceCreator = false
-    config.DefaultSaveFolder = ConfigSaveFolder
-    config.IconPath = ConfigIconPath
-    config.ForceUniqueIds = ConfigForceUniqueIds
+  LoadGlobalConfig()
+  f, logCreateErr := os.Create(GlobalConfig.LogPath)
+  if logCreateErr != nil {
+    log.Println("Error creating log file, skipping log.SetOutput(logFile)")
+    log.Println(logCreateErr)
   } else {
-    data, _ := ioutil.ReadAll(file)
-    json.Unmarshal(data, &config)
+    log.Println("Log directed to "+GlobalConfig.LogPath)
+    log.SetOutput(f)
   }
-  ForceGameCreatorTo = config.Creator
-  ForceGameCreator = config.ForceCreator
-  ForceUniqueIds = config.ForceUniqueIds
-  if config.DefaultSaveFolder != "" {
-    DefaultSaveFolder = config.DefaultSaveFolder
-  }
-  if config.IconPath != "" {
-    IconPath = config.IconPath
-  }
-  f, _ := os.Create(config.LogPath)
-  log.Println("Log directed to "+config.LogPath)
-  log.SetOutput(f)
+  // log details important for debugging
+  log.Println("Info for support purposes (just in case)")
+  log.Println("RXSM version '"+GlobalConfig.Version+"'")
+  log.Println("RXSM old version '"+GlobalConfig.LastVersion()+"'")
+  log.Println("Build OS/Arch "+runtime.GOOS+"/"+runtime.GOARCH)
+  log.Println("Compiler "+runtime.Compiler)
   log.Println("Init complete")
 }
 
 func main() {
   var exitVal int
   log.Println("Starting main routine")
-  config.Save()
-  log.Println("RobocraftX Play Path: "+config.PlayPath)
-  log.Println("RobocraftX Build Path: "+config.BuildPath)
-  saveHandler := NewSaveHandler(config.PlayPath, config.BuildPath)
+  GlobalConfig.Save()
+  log.Println("RobocraftX Play Path: "+GlobalConfig.PlayPath)
+  log.Println("RobocraftX Build Path: "+GlobalConfig.BuildPath)
+  saveHandler := NewSaveHandler(GlobalConfig.PlayPath, GlobalConfig.BuildPath)
   activeDisplay = NewDisplay(saveHandler)
   activeDisplay.Start()
   exitVal, _ = activeDisplay.Join()
   if exitVal == 20 { // set new install dir
     log.Println("Display requested an update to PlayPath")
-    config.PlayPath = filepath.FromSlash(NewInstallPath+"/"+ConfigPlayPathEnding)
-    log.Println("New RobocraftX Play Path: "+config.PlayPath)
-    config.Save()
+    GlobalConfig.PlayPath = filepath.FromSlash(NewInstallPath+"/"+ConfigPlayPathEnding)
+    log.Println("New RobocraftX Play Path: "+GlobalConfig.PlayPath)
+    GlobalConfig.Save()
     exitVal = 0
   }
   log.Println("rxsm terminated")
   os.Exit(exitVal) // this prevents defered operations, which may cause issues
 }
-
-// start of Config
-type Config struct {
-  PlayPath string `json:"play-path"`
-  BuildPath string `json:"build-path"`
-  Creator string `json:"creator"`
-  ForceCreator bool `json:"force-creator?"`
-  LogPath string `json:"log"`
-  DefaultSaveFolder string `json:"copyable-save"`
-  IconPath string `json:"icon"`
-  ForceUniqueIds bool `json:"force-unique-ids?"`
-}
-
-func (c Config) Save() (error) {
-  file, openErr := os.Create(configPath)
-  if openErr != nil {
-    return openErr
-  }
-  out, marshalErr := json.MarshalIndent(c, "", "  ")
-  if marshalErr != nil {
-    return marshalErr
-  }
-  file.Write(out)
-  file.Sync()
-  file.Close()
-  return nil
-}
-// end of Config

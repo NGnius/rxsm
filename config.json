@@ -1,10 +1,12 @@
 {
   "play-path": "test-data/play",
   "build-path": "test-data/build",
-  "creator": "unknown",
+  "creator": "dev",
   "force-creator?": false,
   "log": "log.txt",
   "copyable-save": "resources/default_save",
   "icon": "resources/icon/rxsm-dual.svg",
-  "force-unique-ids?": true
+  "force-unique-ids?": true,
+  "settings-icon": "resources/icon/rxsm-settings.svg",
+  "version": "v0.2.0"
 }

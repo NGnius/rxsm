@@ -21,12 +21,8 @@ const (
 )
 
 var (
-  ForceGameCreator = false
-  ForceGameCreatorTo = ""
   ForceUniqueIds = false
   UsedIds = newIdTracker()
-  DefaultSaveFolder = "resources/default_save"
-  TempNewSaveFolder = "tempsave"
   AppendOnCopy = true
   StringToAppendOnCopy = " (copy)"
   AppendOnNew = true
@@ -141,7 +137,7 @@ func NewSave(folder string) (Save, error) {
   // force unique ids
   if UsedIds.contains(newSave.Data.Id) {
     log.Println("Duplicate id "+strconv.Itoa(newSave.Data.Id))
-    if ForceUniqueIds {
+    if GlobalConfig.ForceUniqueIds {
       newSave.Data.Id = UsedIds.max()+1
       newSave.Data.Save()
     }
@@ -154,7 +150,7 @@ func NewNewSave(folder string, id int) (newSave Save, err error) {
   // duplicate default save
   if DefaultSavePointer == nil { // init if necessary
     var tmpSave Save
-    tmpSave, err = NewSave(DefaultSaveFolder)
+    tmpSave, err = NewSave(GlobalConfig.DefaultSaveFolder)
     if err != nil {
       return
     }
@@ -168,6 +164,7 @@ func NewNewSave(folder string, id int) (newSave Save, err error) {
     newSave.Data.Name = DefaultSavePointer.Data.Name + StringToAppendOnNew
     newSave.Data.Save()
   }
+  newSave.Data.Creator = GlobalConfig.Creator
   return
 }
 
@@ -298,8 +295,8 @@ func NewGameData(path string) (*GameData, error) {
     return &gd, marshErr
   }
   // check forced values
-  if ForceGameCreator {
-    gd.Creator = ForceGameCreatorTo
+  if GlobalConfig.ForceCreator {
+    gd.Creator = GlobalConfig.Creator
   }
   gd.path = path
   gd.isInited = true

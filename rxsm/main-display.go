@@ -19,7 +19,6 @@ const (
 
 var (
 	NewInstallPath string
-	IconPath string = "icon.svg"
 )
 // start Display
 type IDisplayGoroutine interface {
@@ -42,6 +41,8 @@ type Display struct {
 	window *widgets.QMainWindow
 	app *widgets.QApplication
 	modeTab *widgets.QTabBar
+	settingsButton *widgets.QPushButton
+	settingsIcon *gui.QIcon
 	importButton *widgets.QPushButton
 	exportButton *widgets.QPushButton
 	saveSelector *widgets.QComboBox
@@ -60,6 +61,7 @@ type Display struct {
 	activateCheckbox *widgets.QCheckBox
 	moveButton *widgets.QPushButton
 	installPathDialog *InstallPathDialog
+	settingsDialog *SettingsDialog
 }
 
 func NewDisplay(saveHandler SaveHandler) (*Display){
@@ -87,6 +89,16 @@ func (d *Display) Run() {
 	d.window.SetWindowTitle("rxsm")
 	d.modeTab = widgets.NewQTabBar(nil)
 	d.modeTab.ConnectCurrentChanged(d.onModeTabChanged)
+	d.settingsButton = widgets.NewQPushButton2("", nil)
+	// prefer theme icon, but fallback to RXSM settings icon
+	var fallBackIcon *gui.QIcon = gui.NewQIcon5(GlobalConfig.SettingsIconPath)
+	d.settingsIcon = fallBackIcon.FromTheme("settings")
+	if d.settingsIcon.IsNull() {
+		log.Println("Falling back to RXSM settings icon")
+		d.settingsIcon = fallBackIcon
+	}
+	d.settingsButton.SetIcon(d.settingsIcon)
+	d.settingsButton.ConnectClicked(d.onSettingsButtonClicked)
 	d.importButton = widgets.NewQPushButton2("Import", nil)
 	d.importButton.ConnectClicked(d.onImportButtonClicked)
 	d.exportButton = widgets.NewQPushButton2("Export", nil)
@@ -127,10 +139,11 @@ func (d *Display) Run() {
 	d.modeTab.AddTab("Play")
 
 	headerLayout := widgets.NewQGridLayout2()
-	headerLayout.AddWidget3(d.modeTab, 0, 0, 1, 6, 0)
-	headerLayout.AddWidget3(d.saveSelector, 1, 0, 1, 5, 0)
+	headerLayout.AddWidget3(d.modeTab, 0, 0, 1, 8, 0)
+	headerLayout.AddWidget2(d.settingsButton, 0, 8, 0)
+	headerLayout.AddWidget3(d.saveSelector, 1, 0, 1, 7, 0)
 	//headerLayout.AddWidget3(d.copySaveButton, 1, 4, 1, 1, 0)
-	headerLayout.AddWidget3(d.newSaveButton, 1, 5, 1, 1, 0)
+	headerLayout.AddWidget3(d.newSaveButton, 1, 7, 1, 2, 0)
 
 	portLayout := widgets.NewQGridLayout2()
 	portLayout.AddWidget2(d.importButton, 0, 0, 0)
@@ -165,7 +178,7 @@ func (d *Display) Run() {
 	centralWidget.SetLayout(masterLayout)
 	d.window.SetCentralWidget(centralWidget)
 
-	rxsmIcon := gui.NewQIcon5(IconPath)
+	rxsmIcon := gui.NewQIcon5(GlobalConfig.IconPath)
 	d.app.SetWindowIcon(rxsmIcon)
 
 	d.window.Show()
@@ -326,6 +339,20 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 	// select newly created save
 	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
 	// propagation calls d.onSaveSelectedChanged(len(*d.activeSaves)-1)
+}
+
+func (d *Display) onSettingsButtonClicked(bool) {
+	log.Println("Opening settings window")
+	if d.settingsDialog == nil {
+		d.settingsDialog = NewSettingsDialog(d.window, 0)
+		d.settingsDialog.ConnectFinished(d.onSettingsDialogClosed)
+	}
+	d.settingsDialog.OpenSettingsDialog()
+}
+
+func (d *Display) onSettingsDialogClosed(i int) {
+	// Nothing happens here
+	log.Println("Settings window closed with code "+strconv.Itoa(i))
 }
 
 func (d *Display) onImportButtonClicked(bool) {

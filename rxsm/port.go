@@ -187,7 +187,7 @@ func extractOrCreateFile(outFolder string, fileMap map[string]*zip.File, name st
   if zipFileExists {
     dataSrc, dataSrcOpenErr = dataZipFile.Open()
   } else {
-    dataSrc, dataSrcOpenErr = os.Open(filepath.Join(DefaultSaveFolder, name))
+    dataSrc, dataSrcOpenErr = os.Open(filepath.Join(GlobalConfig.DefaultSaveFolder, name))
   }
   defer dataSrc.Close()
   if dataSrcOpenErr != nil {

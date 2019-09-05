@@ -3,4 +3,5 @@ cd .\rxsm && go mod download && go get -u -v github.com/therecipe/qt/cmd/qtdeplo
 xcopy .\resources\default_save .\rxsm\deploy\windows\default_save /I /Y
 copy .\resources\icon\rxsm-dual.svg .\rxsm\deploy\windows\icon.svg
 copy .\resources\icon\rxsm-dual-notext.svg .\rxsm\deploy\windows\icon-min.svg
+copy .\resources\icon\rxsm-settings.svg .\rxsm\deploy\windows\settings.svg
 copy README.md .\rxsm\deploy\windows\INFO.md
