@@ -16,7 +16,7 @@ const (
 )
 
 var (
-  Signer [2]string = [2]string{"NGnius (automatically)", "ngniusness@gmail.com"}
+  Signer [2]string = [2]string{"RXSM (automatically)", "rxsm-auto@exmods.org"}
 )
 
 func TestGit() {
@@ -33,7 +33,7 @@ type ISaveVersioner interface {
   Repository() *git.Repository
   Worktree() *git.Worktree
   Target() *Save
-  Start(p time.Duration) // start automatic snapshots every p in seperate goroutine/thread
+  Start(p int64) // start automatic snapshots every p nanoseconds in seperate goroutine/thread
   Exit() int // end automatic snapshots, return exit code
   Pause() // pause automatic snapshots
   Resume() // resume automatic snapshots
@@ -54,8 +54,9 @@ type SaveVersioner struct {
 }
 
 func NewSaveVersioner(save *Save) (sv *SaveVersioner, err error) {
+  var isInit bool
   sv = &SaveVersioner{controlChan: make(chan int), endChan: make(chan int), save: save}
-  sv.repo, err = openOrInitGit(save.FolderPath())
+  sv.repo, err, isInit = openOrInitGit(save.FolderPath())
   if err != nil {
     return
   }
@@ -63,7 +64,13 @@ func NewSaveVersioner(save *Save) (sv *SaveVersioner, err error) {
   if err != nil {
     return
   }
-  //sv.commitAllNow()
+  if isInit {
+    go func(){
+      sv.StageAll()
+      hash := sv.PlainCommit("Initial commit")
+      log.Println("Created init commit "+hash)
+      }()
+  }
   return
 }
 
@@ -79,9 +86,12 @@ func (sv *SaveVersioner) Target() (*Save) {
   return sv.save
 }
 
-func (sv *SaveVersioner) Start(p time.Duration) {
+func (sv *SaveVersioner) Start(p int64) {
+  if p <= 1 { // automatic versioning disabled
+    return
+  }
   if !sv.isRunning {
-    sv.period = p
+    sv.period = time.Duration(p)
     sv.isRunning = true
     go sv.Run()
     log.Println("SaveVersioner spinning up")
@@ -119,7 +129,7 @@ func (sv *SaveVersioner) Run() {
 
 func (sv *SaveVersioner) Exit() (int){
   if !sv.isRunning {
-    return 1
+    return 0
   }
   sv.controlChan <- controlEnd
   sv.isRunning = false
@@ -167,9 +177,10 @@ func (sv *SaveVersioner) autoCommitNow() {
 
 // end SaveVersioner
 
-func openOrInitGit(folder string) (repo *git.Repository, err error){
+func openOrInitGit(folder string) (repo *git.Repository, err error, isInit bool){
   repo, err = git.PlainOpen(folder)
   if err != nil {
+    isInit = true
     repo, err = git.PlainInit(folder, false)
     return
   }

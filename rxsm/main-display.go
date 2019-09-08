@@ -291,7 +291,7 @@ func (d *Display) onSaveSelectedChanged(index int) {
 	d.populateFields()
 	sv, svErr := NewSaveVersioner(d.selectedSave)
 	d.saveVersioner = sv
-	d.saveVersioner.Start(1000000000*120)
+	d.saveVersioner.Start(GlobalConfig.SnapshotPeriod)
 	if svErr != nil {
 		log.Println("Error creating SaveVersioner for save "+strconv.Itoa(d.selectedSave.Data.Id))
 		log.Println(svErr)
@@ -544,15 +544,16 @@ func (d *Display) onVersionsButtonClicked(bool) {
 }
 
 func (d *Display) onVersionsDialogFinished(int) {
-	d.saveVersioner.Start(1000000000*120)
+	GlobalConfig.Save()
+	d.saveVersioner.Start(GlobalConfig.SnapshotPeriod)
 	// TODO: reload selectedSave
 	d.selectedSave.FreeID()
-	ns, err := NewSave(d.selectedSave.FolderPath())
+	newS, err := NewSave(d.selectedSave.FolderPath())
 	if err != nil {
 		log.Println("Error reloading selected save file")
 		log.Println(err)
 	}
-	(*d.activeSaves)[d.saveSelector.CurrentIndex()] = ns
+	(*d.activeSaves)[d.saveSelector.CurrentIndex()] = newS
 	d.onSaveSelectedChanged(d.saveSelector.CurrentIndex())
 }
 

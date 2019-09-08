@@ -11,7 +11,7 @@ import (
 )
 
 const (
-  RXSMVersion string = "v0.2.0"
+  RXSMVersion string = "v1.0.0"
 )
 
 var activeDisplay IDisplayGoroutine

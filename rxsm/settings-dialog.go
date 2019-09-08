@@ -4,10 +4,12 @@ package main
 
 import (
   //"log"
+  "strconv"
   "path/filepath"
 
   "github.com/therecipe/qt/widgets"
   "github.com/therecipe/qt/core"
+  "github.com/therecipe/qt/gui"
 )
 
 // start SettingsDialog
@@ -43,6 +45,8 @@ type SettingsDialog struct {
   appIconField *widgets.QLineEdit
   settingsIconLabel *widgets.QLabel
   settingsIconField *widgets.QLineEdit
+  snapshotPeriodLabel *widgets.QLabel
+  snapshotPeriodField *widgets.QLineEdit
   rxsmFiller *widgets.QLabel
   // bottom
   fillerLabel *widgets.QLabel
@@ -137,6 +141,13 @@ func (sd *SettingsDialog) __init_display() {
   sd.settingsIconField = widgets.NewQLineEdit(nil)
   sd.settingsIconField.SetToolTip("The icon file (.svg or .jpg) to use as the settings button")
   sd.settingsIconLabel.SetBuddy(sd.settingsIconField)
+  sd.snapshotPeriodLabel = widgets.NewQLabel2("Snapshot Period (ns)", nil, 0)
+  sd.snapshotPeriodField = widgets.NewQLineEdit(nil)
+  sd.snapshotPeriodField.SetToolTip("The time (in nanoseconds) between automatic snapshots of the active save (0=disable)")
+  sd.snapshotPeriodLabel.SetBuddy(sd.snapshotPeriodField)
+  intValidator := gui.NewQIntValidator(nil)
+  intValidator.SetBottom(0)
+  sd.snapshotPeriodField.SetValidator(intValidator)
   sd.rxsmFiller = widgets.NewQLabel2("", nil, 0)
 
   configLayout := widgets.NewQGridLayout2()
@@ -147,7 +158,9 @@ func (sd *SettingsDialog) __init_display() {
   configLayout.AddWidget3(sd.appIconField, 2, 1, 1, 2, 0)
   configLayout.AddWidget2(sd.settingsIconLabel, 3, 0, 0)
   configLayout.AddWidget3(sd.settingsIconField, 3, 1, 1, 2, 0)
-  configLayout.AddWidget3(sd.rxsmFiller, 4, 0, 3, 3, 0)
+  configLayout.AddWidget2(sd.snapshotPeriodLabel, 4, 0, 0)
+  configLayout.AddWidget3(sd.snapshotPeriodField, 4, 1, 1, 2, 0)
+  configLayout.AddWidget3(sd.rxsmFiller, 5, 0, 2, 3, 0)
   sd.rxsmSettings.SetLayout(configLayout)
 
   // bottom
@@ -192,6 +205,7 @@ func (sd *SettingsDialog) populateRXSMSettingsFields() {
   sd.logField.SetText(GlobalConfig.LogPath)
   sd.appIconField.SetText(GlobalConfig.IconPath)
   sd.settingsIconField.SetText(GlobalConfig.SettingsIconPath)
+  sd.snapshotPeriodField.SetText(strconv.Itoa(int(GlobalConfig.SnapshotPeriod)))
 }
 
 func (sd *SettingsDialog) syncBackFields() {
@@ -213,6 +227,11 @@ func (sd *SettingsDialog) syncBackRXSMSettings() {
   GlobalConfig.LogPath = filepath.FromSlash(sd.logField.Text())
   GlobalConfig.IconPath = filepath.FromSlash(sd.appIconField.Text())
   GlobalConfig.SettingsIconPath = filepath.FromSlash(sd.settingsIconField.Text())
+  newPeriod, parseErr := strconv.ParseInt(sd.snapshotPeriodField.Text(), 10, 64)
+  if parseErr != nil {
+    newPeriod = 0
+  }
+  GlobalConfig.SnapshotPeriod = newPeriod
 }
 
 func (sd *SettingsDialog) onOkButtonClicked(bool) {

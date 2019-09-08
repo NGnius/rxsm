@@ -5,6 +5,7 @@ package main
 import (
   "log"
   "strconv"
+  "time"
   "gopkg.in/src-d/go-git.v4"
   "gopkg.in/src-d/go-git.v4/plumbing"
   "gopkg.in/src-d/go-git.v4/plumbing/object"
@@ -45,12 +46,14 @@ func (vd *VersionDialog) OpenVersionDialog(saveVersioner ISaveVersioner) (int){
 func (vd *VersionDialog) __init_display() {
   vd.infoLabel = widgets.NewQLabel2("<b>Versions</b> <br/>Automatic snapshots are stopped while this menu is open", nil, 0)
   vd.infoLabel.SetTextFormat(1)
-  vd.settingsAutoLabel = widgets.NewQLabel2("Take a snapshot every (seconds)", nil, 0)
+  vd.settingsAutoLabel = widgets.NewQLabel2("Take a snapshot every (seconds) 0=disable", nil, 0)
   vd.settingsAutoLabel.SetWordWrap(true)
   vd.settingsAutoField = widgets.NewQLineEdit(nil)
   intValidator := gui.NewQIntValidator(nil)
   intValidator.SetBottom(0)
   vd.settingsAutoField.SetValidator(intValidator)
+  vd.settingsAutoField.SetText(strconv.Itoa(int(GlobalConfig.SnapshotPeriod/time.Second.Nanoseconds())))
+  vd.settingsAutoField.ConnectTextChanged(vd.onAutoFieldTextChanged)
   vd.settingsAutoLabel.SetBuddy(vd.settingsAutoField)
 
   vd.treeView = widgets.NewQTreeWidget(nil)
@@ -114,8 +117,14 @@ func (vd *VersionDialog) updateDetachedHeadWarning() {
   }
 }
 
-func (vd *VersionDialog) onAutoFieldUpdate(value string) {
-  // TODO: update config with new value
+func (vd *VersionDialog) onAutoFieldTextChanged(value string) {
+  newPeriod, parseErr := strconv.ParseInt(value, 10, 64)
+  if parseErr != nil {
+    log.Println("Invalid integer in auto-snapshot field")
+    newPeriod = 0
+  }
+  GlobalConfig.SnapshotPeriod = newPeriod * time.Second.Nanoseconds()
+  log.Println("New snapshot period set "+strconv.Itoa(int(GlobalConfig.SnapshotPeriod)))
 }
 
 func (vd *VersionDialog) onCheckoutButtonClicked(bool) {

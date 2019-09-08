@@ -30,6 +30,7 @@ type Config struct {
   IconPath string `json:"icon"`
   ForceUniqueIds bool `json:"force-unique-ids?"`
   SettingsIconPath string `json:"settings-icon"`
+  SnapshotPeriod int64 `json:"snapshot-period"`
   Version string `json:"version"`
   lastVersion string
   path string
@@ -44,6 +45,7 @@ func DefaultConfig() (c *Config) {
   c.IconPath = "icon.svg"
   c.ForceUniqueIds = false
   c.SettingsIconPath = "settings.svg"
+  c.SnapshotPeriod = 0
   if runtime.GOOS == "windows" {
     c.BuildPath = filepath.FromSlash(os.Getenv("APPDATA")+"/../LocalLow/Freejam/RobocraftX/Games")
     c.PlayPath = filepath.FromSlash("C:/Program Files (x86)/Steam/steamapps/common/RobocraftX/"+ConfigPlayPathEnding)
