@@ -29,6 +29,7 @@ var activeDisplay IDisplayGoroutine
 
 func init() {
   log.Println("Starting init")
+  // runtime.GOMAXPROCS(1)
   // load config file
   file, openErr := os.Open(configPath)
   if openErr != nil {
