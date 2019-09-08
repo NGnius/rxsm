@@ -60,6 +60,7 @@ func DefaultConfig() (c *Config) {
 }
 
 func (c *Config) Save() (error) {
+  c.Version = RXSMVersion
   file, openErr := os.Create(c.path)
   if openErr != nil {
     return openErr
@@ -110,6 +111,10 @@ func LoadGlobalConfig() (*Config, error) {
   err := c.load(globalConfigPath)
   if err == nil {
     GlobalConfig = c
+  } else {
+    GlobalConfig = DefaultConfig()
+    GlobalConfig.path = globalConfigPath
+    GlobalConfig.Save()
   }
   return c, err
 }
