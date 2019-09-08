@@ -8,6 +8,6 @@
   "icon": "resources/icon/rxsm-dual.svg",
   "force-unique-ids?": true,
   "settings-icon": "resources/icon/rxsm-settings.svg",
-  "snapshot-period": 2147483648000000000,
+  "snapshot-period": 0,
   "version": "v1.0.0"
 }

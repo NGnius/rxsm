@@ -65,9 +65,8 @@ func (vd *VersionDialog) __init_display() {
   vd.newVersionButton.ConnectClicked(vd.onNewVersionButtonClicked)
   vd.newBranchButton = widgets.NewQPushButton2("New Branch", nil)
   vd.newBranchButton.ConnectClicked(vd.onNewBranchButtonClicked)
-  vd.deleteBranchButton = widgets.NewQPushButton2("Delete Branch", nil)
+  vd.deleteBranchButton = widgets.NewQPushButton2("Hide Branch", nil)
   vd.deleteBranchButton.ConnectClicked(vd.onDeleteBranchButtonClicked)
-  vd.deleteBranchButton.SetEnabled(false)
 
   vd.fillerLabel = widgets.NewQLabel2("", nil, 0)
   vd.fillerLabel.SetWordWrap(true)
@@ -178,7 +177,7 @@ func (vd *VersionDialog) onNewVersionButtonClicked(bool) {
   }()
   nameDialog := widgets.NewQInputDialog(nil, 0)
   var ok *bool // doesn't work properly
-  name := nameDialog.GetText(nil, "Title", "Label", 0, "Text", ok, 0, 0)
+  name := nameDialog.GetText(vd, "Version Name", "New Version Name", 0, "", ok, 0, 0)
   if name != "" {
     go func(){ // start goroutine func; this does not need to block UI actions
       <- stagingDone
@@ -221,7 +220,7 @@ func (vd *VersionDialog) onNewBranchButtonClicked(bool) {
   }
   nameDialog := widgets.NewQInputDialog(nil, 0)
   var ok *bool // doesn't work properly (sort of pointless, except compiler yells at me otherwise)
-  name := nameDialog.GetText(nil, "Title", "Label", 0, "Text", ok, 0, 0)
+  name := nameDialog.GetText(vd, "Branch Name", "New Branch Name", 0, "", ok, 0, 0)
   if name != "" {
     // create branch
     branchConf := &configlib.Branch{Name: name, Merge: plumbing.NewBranchReferenceName(name)}
@@ -276,24 +275,33 @@ func (vd *VersionDialog) onDeleteBranchButtonClicked(bool) {
     log.Println("Master branch selected, ignoring delete branch button click")
     return
   }
+  // checkout master before deleting branch
+  checkoutOpts := &git.CheckoutOptions{Force: true}
+  checkoutOpts.Branch = plumbing.NewBranchReferenceName("master")
+  checkErr := vd.saveVersioner.Worktree().Checkout(checkoutOpts)
+  if checkErr != nil {
+    log.Println("Error checking out master branch after "+selectedItem.Text(0)+" branch deleted")
+    log.Println(checkErr)
+    return
+  }
   delErr := vd.saveVersioner.Repository().DeleteBranch(selectedItem.Text(0))
   if delErr != nil {
     log.Println("Error deleting branch "+selectedItem.Text(0))
     log.Println(delErr)
     return
   }
-  pruneErr := vd.saveVersioner.Repository().Prune(git.PruneOptions{
-    Handler: func(hash plumbing.Hash) (error) {
-      return vd.saveVersioner.Repository().DeleteObject(hash)
-    }  })
-  if pruneErr != nil {
-    log.Println("Error pruning after deleting branch "+selectedItem.Text(0))
-    log.Println(pruneErr)
-    return
-  }
   // remove branch (and children) from tree widget
   selectedItem.SetHidden(true) // deleting is too computationally hard
   log.Println("Deleted branch "+selectedItem.Text(0))
+  // select master branch's top commit in tree widget
+  resultItems := vd.treeView.FindItems("master", 0, 0)
+  if len(resultItems) == 0 {
+    log.Println("Unable to find master branch, skipping SetCurrentItem")
+    return
+  }
+  vd.treeView.SetCurrentItem(resultItems[0].Child(resultItems[0].ChildCount()-1))
+  vd.isDetached = false
+  vd.updateDetachedHeadWarning()
 }
 
 func (vd *VersionDialog) onCloseButtonClicked(bool) {
@@ -312,6 +320,11 @@ func makeTree(repo *git.Repository, treeWidget *widgets.QTreeWidget) (topItems [
     return topItems, branchErr
   }
   biterErr := branchIter.ForEach(func(branch *plumbing.Reference) (error) {
+    _, err := repo.Branch(branch.Name().Short())
+    if err != nil && branch.Name().Short() != "master" { // branch ref exists, but branch has been deleted
+      log.Println("Skipping branch ref "+branch.Name().Short())
+      return nil
+    }
     commit, err := repo.CommitObject(branch.Hash())
     if err != nil {
       return err
