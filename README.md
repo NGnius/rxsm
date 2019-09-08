@@ -1,36 +1,12 @@
-# rxsm
-Robocraft X Save Manager; a save manager for RobocraftX
+# ![RXSM logo](https://raw.githubusercontent.com/NGnius/rxsm/develop/resources/images/icon-64.png) RXSM
 
-## Features
+RXSM, short for Robocraft X Save Manager, allows you to stop messing around with game files and focus on what's important.
+Modify, track, rollback, import and export your RobocraftX games at the click of a button.
+RXSM is a powerful application written in [Go](https://golang.org/) using [Qt](https://www.qt.io/) graphics and [Git](https://git-scm.com/) game save version management.
+Want to learn more about what RXSM can do? Read the [User guide](https://github.com/NGnius/rxsm/wiki/User-Guide) and [FAQ](https://github.com/NGnius/rxsm/wiki/FAQ)!
+Leave the dinosaurs behind and advance your RobocraftX experience by millenia with RXSM.
 
-* Activate a save in creative/build mode so RCX loads it
-* Edit save info & thumbnail without opening a file editor
-* Move a save between creative and community (build and play) game modes
-* Create a new save with a unique ID
-* Force unique IDs to avoid ID conflicts
-* Import and export zip files of save(s)
-
-## FAQ
-
-> **I don't see any saves when I start RXSM, how do I fix it?**
-
-*There should be a prompt on startup so you can fix this. If you need more information or it doesn't show up, [go here](https://github.com/NGnius/rxsm/wiki/User-Guide#configuration).*
-
-> **How do I use RXSM?**
-
-*You click things. I understand RXSM seems like its a millions of years old, but I expect you know that much. For an overview of what all the clickable things do, check out the [user guide](https://github.com/NGnius/rxsm/wiki/User-Guide#usage).*
-
-> **Where can I report bugs?**
-
-*The best place is by creating an [issue on GitHub](https://github.com/NGnius/rxsm/issues), but talking to NGnius on Discord also works.*
-
-> **How can I help out?**
-
-*Show it to your friends, your mother or even some long-dead fossil creature! [Bug reports](https://github.com/NGnius/rxsm/issues) and [pull requests](https://github.com/NGnius/rxsm/pulls) also help.*
-
-> **What's with all the bad dinosaur puns?**
-
-*First off all bad? They're t-rex-ible (terrible). The reason? RXSM is pronounced rexism, as in T-rex-ism.*
+![Main Window](https://raw.githubusercontent.com/NGnius/rxsm/develop/resources/images/main.png)
 
 ### Disclaimer
 
@@ -43,8 +19,6 @@ Third-party libraries used:
 
 ## Development
 
-### Installation
+### New developers wanted!
 
-Install Qt
-
-* [Instructions](https://github.com/therecipe/qt/blob/master/README.md#installation) from qt repo
+To get started, read the [Developer guide](https://github.com/NGnius/rxsm/wiki/Developer-Guide).
