@@ -37,8 +37,9 @@ Robocraft X Save Manager; a save manager for RobocraftX
 RXSM is maintained by NGnius and developed by enthusiastic community members (mainly NGnius).
 RXSM is not affiliated with FreeJam, RobocraftX or any other company, including but not limited to prehistoric-juice-pumping corporations.
 
-Third-party libraries in this project:
+Third-party libraries used:
 * [Qt for Go](https://github.com/therecipe/qt) ([License](https://github.com/therecipe/qt/blob/master/LICENSE))
+* [Go-Git](https://github.com/src-d/go-git) ([License](https://github.com/src-d/go-git/blob/master/LICENSE))
 
 ## Development
 

@@ -33,6 +33,7 @@ type Display struct {
 	activeMode int
 	activeSaves *[]Save
 	saveHandler SaveHandler
+	saveVersioner ISaveVersioner
 	exitStatus int
 	firstTime bool
 	temporaryThumbnailPath string
@@ -60,6 +61,7 @@ type Display struct {
 	cancelButton *widgets.QPushButton
 	activateCheckbox *widgets.QCheckBox
 	moveButton *widgets.QPushButton
+	versionsButton *widgets.QPushButton
 	installPathDialog *InstallPathDialog
 	settingsDialog *SettingsDialog
 }
@@ -133,6 +135,8 @@ func (d *Display) Run() {
 	d.activateCheckbox.ConnectStateChanged(d.onActivateChecked)
 	d.moveButton = widgets.NewQPushButton2("Toggle Location", nil)
 	d.moveButton.ConnectClicked(d.onMoveToButtonClicked)
+	d.versionsButton = widgets.NewQPushButton2("Versions", nil)
+	d.versionsButton.ConnectClicked(d.onVersionsButtonClicked)
 
 	// populate fields
 	// propogation of events calls d.onModeTabChanged(BUILD_MODE)
@@ -166,7 +170,8 @@ func (d *Display) Run() {
 	bottomButtons := widgets.NewQGridLayout2()
 	bottomButtons.AddWidget2(d.saveButton, 0, 0, 0)
 	bottomButtons.AddWidget2(d.cancelButton, 0, 1, 0)
-	bottomButtons.AddWidget3(d.moveButton, 1, 0, 1, 2, 0)
+	bottomButtons.AddWidget2(d.moveButton, 1, 0, 0)
+	bottomButtons.AddWidget2(d.versionsButton, 1, 1, 0)
 
 	masterLayout := widgets.NewQGridLayout2()
 	masterLayout.AddLayout(headerLayout, 0, 0, 0)
@@ -195,6 +200,9 @@ func (d *Display) Run() {
 	// or the window is closed by the user
 	d.app.Exec()
 	d.window.Hide()
+	if d.saveVersioner != nil {
+		d.saveVersioner.Exit()
+	}
 	log.Println("Display ended")
 	d.endChan <- d.exitStatus
 }
@@ -276,8 +284,18 @@ func (d *Display) onSaveSelectedChanged(index int) {
 	if index == -1 { // no items in dropdown
 		return
 	}
+	if d.saveVersioner != nil {
+		d.saveVersioner.Exit()
+	}
 	d.selectedSave = &(*d.activeSaves)[index]
 	d.populateFields()
+	sv, svErr := NewSaveVersioner(d.selectedSave)
+	d.saveVersioner = sv
+	d.saveVersioner.Start(1000000000*120)
+	if svErr != nil {
+		log.Println("Error creating SaveVersioner for save "+strconv.Itoa(d.selectedSave.Data.Id))
+		log.Println(svErr)
+	}
 	log.Println("Selected "+strconv.Itoa(d.selectedSave.Data.Id))
 }
 
@@ -512,6 +530,30 @@ func (d *Display) onMoveToButtonClicked(bool) {
 	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
 	//d.onSaveSelectedChanged(len(*d.activeSaves)-1)
 	log.Println("Save moved to "+strconv.Itoa(d.activeMode))
+}
+
+func (d *Display) onVersionsButtonClicked(bool) {
+	if d.saveVersioner == nil {
+		log.Println("save versioner is nil, ignoring version button click")
+		return
+	}
+	d.saveVersioner.Exit()
+	versionDialog := NewVersionDialog(d.window, 0)
+	versionDialog.ConnectFinished(d.onVersionsDialogFinished)
+	versionDialog.OpenVersionDialog(d.saveVersioner)
+}
+
+func (d *Display) onVersionsDialogFinished(int) {
+	d.saveVersioner.Start(1000000000*120)
+	// TODO: reload selectedSave
+	d.selectedSave.FreeID()
+	ns, err := NewSave(d.selectedSave.FolderPath())
+	if err != nil {
+		log.Println("Error reloading selected save file")
+		log.Println(err)
+	}
+	(*d.activeSaves)[d.saveSelector.CurrentIndex()] = ns
+	d.onSaveSelectedChanged(d.saveSelector.CurrentIndex())
 }
 
 // end Display

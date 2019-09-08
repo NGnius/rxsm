@@ -260,6 +260,10 @@ func (s *Save) MoveOut() (error) {
   return s.Move(lastDir)
 }
 
+func (s *Save) FreeID() {
+  UsedIds.remove(s.Data.Id)
+}
+
 func (s *Save) DataPath() (string) {
   return s.dataPath
 }
@@ -270,6 +274,10 @@ func (s *Save) SavePath() (string) {
 
 func (s *Save) ThumbnailPath() (string) {
   return s.thumbnailPath
+}
+
+func (s *Save) FolderPath() (string) {
+  return s.folder
 }
 // end Save
 
