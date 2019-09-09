@@ -180,7 +180,11 @@ func (sd *SettingsDialog) __init_display() {
   sd.descriptionLabel = widgets.NewQLabel2("RobocraftX Save Manager, a <a href='https://github.com/NGnius/rxsm/blob/develop/LICENSE'>FOSS project</a> by NGnius to bring RCX players out of the Jurassic period. <br/><h3>RAWR!</h3>", nil, 0)
   sd.descriptionLabel.SetWordWrap(true)
   sd.descriptionLabel.SetAlignment(0x0004)
-  sd.rxsmVersionLabel = widgets.NewQLabel2("<b>Version</b> "+GlobalConfig.Version+" ("+runtime.Compiler+")", nil, 0)
+  versionStr := GlobalConfig.Version+" ("+runtime.Compiler+")"
+  if GlobalConfig.LastVersion() != GlobalConfig.Version && GlobalConfig.LastVersion() != "" {
+    versionStr = GlobalConfig.LastVersion()+" -> "+versionStr
+  }
+  sd.rxsmVersionLabel = widgets.NewQLabel2("<b>Version</b> "+versionStr, nil, 0)
   sd.rxsmVersionLabel.SetAlignment(0x0004)
   sd.rxsmVersionLabel.SetSizePolicy2(1,4)
   sd.machineLabel = widgets.NewQLabel2("<b>Machine</b> "+runtime.GOOS+"-"+runtime.GOARCH+" x"+strconv.Itoa(runtime.NumCPU())+" (go: "+strconv.Itoa(runtime.NumGoroutine())+")", nil, 0)
