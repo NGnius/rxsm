@@ -44,7 +44,7 @@ func (vd *VersionDialog) OpenVersionDialog(saveVersioner ISaveVersioner) (int){
 }
 
 func (vd *VersionDialog) __init_display() {
-  vd.infoLabel = widgets.NewQLabel2("<b>Versions</b> <br/>Automatic snapshots are stopped while this menu is open", nil, 0)
+  vd.infoLabel = widgets.NewQLabel2("<b>Versions of Active Save (ID: "+strconv.Itoa(vd.saveVersioner.Target().Data.Id)+")</b> <br/><i>Automatic snapshots are stopped while this menu is open</i>", nil, 0)
   vd.infoLabel.SetTextFormat(1)
   vd.settingsAutoLabel = widgets.NewQLabel2("Take a snapshot every (seconds) 0=disable", nil, 0)
   vd.settingsAutoLabel.SetWordWrap(true)

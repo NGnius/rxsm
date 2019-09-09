@@ -18,6 +18,7 @@ const (
   GameDataFile = "GameData.json"
   GameSaveFile = "GameSave.RCX"
   ThumbnailFile = "Thumbnail.jpg"
+  FirstFolder = "!!!Game_00"
 )
 
 var (
@@ -70,14 +71,20 @@ func (sv SaveHandler) BuildSaveFolderPath(id int) (string) {
   return filepath.Join(sv.buildPath, GameStart+DoubleDigitStr(id))
 }
 
+func (sv SaveHandler) FirstBuildSaveFolderPath() (string) {
+  return filepath.Join(sv.buildPath, FirstFolder)
+}
+
 func (sv SaveHandler) MaxId() (int) {
   return UsedIds.max()
 }
 
 func (sv SaveHandler) ActiveBuildSave() (as *Save) {
+  firstSaveFolder := sv.FirstBuildSaveFolderPath()
   for _, save := range sv.BuildSaves {
-    if save.folder == sv.BuildSaveFolderPath(0) {
+    if len(save.FolderPath()) >= len(firstSaveFolder) && save.FolderPath()[:len(firstSaveFolder)] == firstSaveFolder  {
       as = &save
+      return
     }
   }
   return
@@ -232,7 +239,7 @@ func (s *Save) MoveToId() (error) {
 
 func (s *Save) MoveToFirst() (error) {
   firstDir, _ := filepath.Split(s.folder)
-  firstDir = filepath.Join(firstDir, GameStart+"00")
+  firstDir = filepath.Join(firstDir, FirstFolder)
   return s.Move(firstDir)
 }
 
@@ -342,6 +349,7 @@ func newIdTracker() (*idTracker){
 }
 
 func (it *idTracker) add(id int) {
+  log.Println("Tracker add "+strconv.Itoa(id))
   it.lock.Lock()
   it.idMap[id] = true
   it.idArray = append(it.idArray, id)
@@ -349,10 +357,22 @@ func (it *idTracker) add(id int) {
 }
 
 func (it *idTracker) remove(id int) {
+  log.Println("Tracker remove "+strconv.Itoa(id))
   it.lock.Lock()
   delete(it.idMap, id)
   loc := it._location(id)
-  it.idArray = append(it.idArray[:loc], it.idArray[:loc+1]...)
+  if loc == -1 {
+    log.Println("Id not found, skipping remove")
+    it.lock.Unlock()
+    return
+  }
+  if loc == 0 {
+    it.idArray = it.idArray[1:]
+  } else if len(it.idArray) == loc+1 {
+    it.idArray = it.idArray[:loc]
+  } else {
+    it.idArray = append(it.idArray[:loc], it.idArray[:loc+1]...)
+  }
   it.lock.Unlock()
 }
 

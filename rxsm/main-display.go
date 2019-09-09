@@ -77,6 +77,14 @@ func (d *Display) Run() {
 	d.activeSaves = &d.saveHandler.BuildSaves
 	if d.activeSave != nil {
 		log.Println("Active save on startup "+strconv.Itoa(d.activeSave.Data.Id))
+		sv, svErr := NewSaveVersioner(d.activeSave)
+		if svErr != nil {
+			log.Println("Error creating SaveVersioner for active save")
+			log.Println(svErr)
+		} else {
+			d.saveVersioner = sv
+			d.saveVersioner.Start(GlobalConfig.SnapshotPeriod)
+		}
 	} else {
 		log.Println("No active save detected on startup")
 	}
@@ -225,7 +233,7 @@ func (d *Display) populateFields() {
 	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
 	d.thumbnailImage.Swap(gui.NewQIcon5(d.selectedSave.ThumbnailPath()))
 	d.thumbnailButton.SetIcon(d.thumbnailImage)
-	if d.activeSave == d.selectedSave {
+	if d.activeSave != nil && d.selectedSave != nil && *d.activeSave == *d.selectedSave {
 		d.activateCheckbox.SetCheckState(2)
 	} else {
 		d.activateCheckbox.SetCheckState(0)
@@ -284,18 +292,8 @@ func (d *Display) onSaveSelectedChanged(index int) {
 	if index == -1 { // no items in dropdown
 		return
 	}
-	if d.saveVersioner != nil {
-		d.saveVersioner.Exit()
-	}
 	d.selectedSave = &(*d.activeSaves)[index]
 	d.populateFields()
-	sv, svErr := NewSaveVersioner(d.selectedSave)
-	d.saveVersioner = sv
-	d.saveVersioner.Start(GlobalConfig.SnapshotPeriod)
-	if svErr != nil {
-		log.Println("Error creating SaveVersioner for save "+strconv.Itoa(d.selectedSave.Data.Id))
-		log.Println(svErr)
-	}
 	log.Println("Selected "+strconv.Itoa(d.selectedSave.Data.Id))
 }
 
@@ -364,12 +362,12 @@ func (d *Display) onSettingsButtonClicked(bool) {
 	log.Println("Opening settings window")
 	if d.settingsDialog == nil {
 		d.settingsDialog = NewSettingsDialog(d.window, 0)
-		d.settingsDialog.ConnectFinished(d.onSettingsDialogClosed)
+		d.settingsDialog.ConnectFinished(d.onSettingsDialogFinished)
 	}
 	d.settingsDialog.OpenSettingsDialog()
 }
 
-func (d *Display) onSettingsDialogClosed(i int) {
+func (d *Display) onSettingsDialogFinished(i int) {
 	// Nothing happens here
 	log.Println("Settings window closed with code "+strconv.Itoa(i))
 }
@@ -459,20 +457,40 @@ func (d *Display) onActivateChecked(checkState int) {
 		log.Println("Hey buddy, you can't activate a play save")
 		return // activating a play save is pointless
 	}
-	if d.activeSave != nil {
+	switch checkState {
+	case 0:
+		if d.activeSave == nil || *d.activeSave != *d.selectedSave {
+			// automatic de-check when save changed or no currently active save
+			return
+		}
 		moveErr := d.activeSave.MoveToId()
 		if moveErr != nil {
 			log.Println("Error while deactivating "+strconv.Itoa(d.activeSave.Data.Id))
 			log.Println(moveErr)
 			return
 		}
+		if d.saveVersioner != nil {
+			d.saveVersioner.Exit()
+		}
+		d.saveVersioner = nil
 		log.Println("Deactivated "+strconv.Itoa(d.activeSave.Data.Id))
-	}
-	switch checkState {
-	case 0:
 		d.activeSave = nil
 	case 2:
+		if d.activeSave != nil && d.selectedSave != nil && *d.activeSave == *d.selectedSave && d.saveVersioner != nil {
+			// automatic re-check when active save selected
+			return
+		}
+		if d.activeSave != nil {
+			// deactivate old activate save
+			moveErr := d.activeSave.MoveToId()
+			if moveErr != nil {
+				log.Println("Error while deactivating "+strconv.Itoa(d.activeSave.Data.Id))
+				log.Println(moveErr)
+				return
+			}
+		}
 		if d.selectedSave != nil {
+			// activate new active save
 			d.activeSave = d.selectedSave
 			moveErr := d.activeSave.MoveToFirst()
 			if moveErr != nil {
@@ -480,6 +498,17 @@ func (d *Display) onActivateChecked(checkState int) {
 				log.Println(moveErr)
 				return
 			}
+			if d.saveVersioner != nil {
+				d.saveVersioner.Exit()
+			}
+			sv, svErr := NewSaveVersioner(d.activeSave)
+			if svErr != nil {
+				log.Println("Error creating SaveVersioner for save "+strconv.Itoa(d.activeSave.Data.Id))
+				log.Println(svErr)
+				return
+			}
+			d.saveVersioner = sv
+			d.saveVersioner.Start(GlobalConfig.SnapshotPeriod)
 			log.Println("Activated "+strconv.Itoa(d.activeSave.Data.Id))
 		} else {
 			log.Println("Selected save is nil, activation failed")
@@ -547,14 +576,16 @@ func (d *Display) onVersionsDialogFinished(int) {
 	GlobalConfig.Save()
 	d.saveVersioner.Start(GlobalConfig.SnapshotPeriod)
 	// TODO: reload selectedSave
-	d.selectedSave.FreeID()
-	newS, err := NewSave(d.selectedSave.FolderPath())
+	d.activeSave.FreeID()
+	newS, err := NewSave(d.activeSave.FolderPath())
 	if err != nil {
 		log.Println("Error reloading selected save file")
 		log.Println(err)
 	}
-	(*d.activeSaves)[d.saveSelector.CurrentIndex()] = newS
-	d.onSaveSelectedChanged(d.saveSelector.CurrentIndex())
+	*d.activeSave = newS
+	if d.selectedSave != nil && *d.activeSave == *d.selectedSave {
+		d.onSaveSelectedChanged(d.saveSelector.CurrentIndex())
+	}
 }
 
 // end Display
