@@ -7,6 +7,7 @@ import (
   "path/filepath"
   "log"
   "runtime"
+  "strconv"
   //"fmt"
 )
 
@@ -33,8 +34,9 @@ func init() {
   log.Println("Info for support purposes (just in case)")
   log.Println("RXSM version '"+GlobalConfig.Version+"'")
   log.Println("RXSM old version '"+GlobalConfig.LastVersion()+"'")
-  log.Println("Build OS/Arch "+runtime.GOOS+"/"+runtime.GOARCH)
+  log.Println("Build OS-Arch "+runtime.GOOS+"-"+runtime.GOARCH)
   log.Println("Compiler "+runtime.Compiler)
+  log.Println("Processors "+strconv.Itoa(runtime.NumCPU()))
   log.Println("Init complete")
 }
 

@@ -6,6 +6,7 @@ import (
   //"log"
   "strconv"
   "path/filepath"
+  "runtime"
 
   "github.com/therecipe/qt/widgets"
   "github.com/therecipe/qt/core"
@@ -22,6 +23,7 @@ type SettingsDialog struct {
   tabs *widgets.QTabWidget
   saveSettings *widgets.QWidget
   rxsmSettings *widgets.QWidget
+  aboutSettings *widgets.QWidget // arguably not settings
   // save settings widgets
   saveLabel *widgets.QLabel
   creatorLabel *widgets.QLabel
@@ -48,6 +50,11 @@ type SettingsDialog struct {
   snapshotPeriodLabel *widgets.QLabel
   snapshotPeriodField *widgets.QLineEdit
   rxsmFiller *widgets.QLabel
+  // about widgets
+  iconLabel *widgets.QLabel
+  rxsmVersionLabel *widgets.QLabel
+  machineLabel *widgets.QLabel
+  descriptionLabel *widgets.QLabel
   // bottom
   fillerLabel *widgets.QLabel
   okButton *widgets.QPushButton
@@ -70,8 +77,10 @@ func (sd *SettingsDialog) __init_display() {
   sd.tabs = widgets.NewQTabWidget(nil)
   sd.saveSettings = widgets.NewQWidget(nil, 0)
   sd.rxsmSettings = widgets.NewQWidget(nil, 0)
+  sd.aboutSettings = widgets.NewQWidget(nil, 0)
   sd.tabs.AddTab(sd.saveSettings, "Save Settings")
   sd.tabs.AddTab(sd.rxsmSettings, "Configuration")
+  sd.tabs.AddTab(sd.aboutSettings, "About")
 
   topLayout := widgets.NewQGridLayout2()
   topLayout.AddWidget2(sd.settingsLabel, 0, 0, 0)
@@ -162,6 +171,29 @@ func (sd *SettingsDialog) __init_display() {
   configLayout.AddWidget3(sd.snapshotPeriodField, 4, 1, 1, 2, 0)
   configLayout.AddWidget3(sd.rxsmFiller, 5, 0, 2, 3, 0)
   sd.rxsmSettings.SetLayout(configLayout)
+
+  // about tab
+  sd.iconLabel = widgets.NewQLabel2("", nil, 0)
+  sd.iconLabel.SetAlignment(0x0084)
+  logo := gui.NewQPixmap3(GlobalConfig.IconPath, "", 0).ScaledToHeight(80, 1)
+  sd.iconLabel.SetPixmap(logo)
+  sd.descriptionLabel = widgets.NewQLabel2("RobocraftX Save Manager, a <a href='https://github.com/NGnius/rxsm/blob/develop/LICENSE'>FOSS project</a> by NGnius to bring RCX players out of the Jurassic period. <br/><h3>RAWR!</h3>", nil, 0)
+  sd.descriptionLabel.SetWordWrap(true)
+  sd.descriptionLabel.SetAlignment(0x0004)
+  sd.rxsmVersionLabel = widgets.NewQLabel2("<b>Version</b> "+GlobalConfig.Version+" ("+runtime.Compiler+")", nil, 0)
+  sd.rxsmVersionLabel.SetAlignment(0x0004)
+  sd.rxsmVersionLabel.SetSizePolicy2(1,4)
+  sd.machineLabel = widgets.NewQLabel2("<b>Machine</b> "+runtime.GOOS+"-"+runtime.GOARCH+" x"+strconv.Itoa(runtime.NumCPU())+" (go: "+strconv.Itoa(runtime.NumGoroutine())+")", nil, 0)
+  sd.machineLabel.SetWordWrap(true)
+  sd.machineLabel.SetAlignment(0x0004)
+  sd.machineLabel.SetSizePolicy2(1,4)
+
+  aboutLayout := widgets.NewQGridLayout2()
+  aboutLayout.AddWidget2(sd.iconLabel, 0, 0, 0)
+  aboutLayout.AddWidget2(sd.descriptionLabel, 1, 0, 0)
+  aboutLayout.AddWidget2(sd.rxsmVersionLabel, 2, 0, 0)
+  aboutLayout.AddWidget2(sd.machineLabel, 3, 0, 0)
+  sd.aboutSettings.SetLayout(aboutLayout)
 
   // bottom
   sd.fillerLabel = widgets.NewQLabel2("To apply changes, click Ok", nil, 0)
