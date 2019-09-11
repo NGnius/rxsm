@@ -203,6 +203,24 @@ func (d *Display) Run() {
 		d.installPathDialog.OpenInstallPathDialog()
 	}
 
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "-settings", "--settings":
+			log.Println("Found -settings run arg, opening settingsDialog")
+			d.settingsButton.Click()
+		case "-install-path", "--install-path":
+			if d.installPathDialog == nil {
+				log.Println("Found -install-path run arg, opening installPathDialog")
+				d.installPathDialog = NewInstallPathDialog(d.window, 0)
+				d.installPathDialog.ConnectFinished(d.onInstallPathDialogFinished)
+				d.installPathDialog.OpenInstallPathDialog()
+			}
+		case "-versioning", "--versioning":
+			log.Println("Found -versions run arg, opening versionDialog")
+			d.versionsButton.Click()
+		}
+	}
+
 	// start the main Qt event loop
 	// and block until app.Exit() is called
 	// or the window is closed by the user

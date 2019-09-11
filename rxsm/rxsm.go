@@ -8,7 +8,7 @@ import (
   "log"
   "runtime"
   "strconv"
-  //"fmt"
+  "fmt"
 )
 
 const (
@@ -42,6 +42,10 @@ func init() {
 
 func main() {
   var exitVal int
+  shouldExit := parseRunArgs()
+  if shouldExit {
+    os.Exit(exitVal)
+  }
   log.Println("Starting main routine")
   GlobalConfig.Save()
   log.Println("RobocraftX Play Path: "+GlobalConfig.PlayPath)
@@ -59,4 +63,24 @@ func main() {
   }
   log.Println("rxsm terminated")
   os.Exit(exitVal) // this prevents defered operations, which may cause issues
+}
+
+func parseRunArgs() (exit bool) {
+  if len(os.Args) > 1 {
+    switch os.Args[1] {
+    case "-version", "--version", "version":
+      versionStr := "RXSM version "
+      if GlobalConfig.LastVersion() != GlobalConfig.Version {
+        if GlobalConfig.LastVersion() == "" {
+          versionStr += "unknown version -> "
+        } else {
+          versionStr += GlobalConfig.LastVersion()+" -> "
+        }
+      }
+      versionStr += GlobalConfig.Version
+      fmt.Println(versionStr)
+      exit = true
+    }
+  }
+  return
 }
