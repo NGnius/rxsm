@@ -220,6 +220,7 @@ func (d *Display) Run() {
 			d.versionsButton.Click()
 		}
 	}
+	go d.checkForUpdates()
 
 	// start the main Qt event loop
 	// and block until app.Exit() is called
@@ -272,6 +273,8 @@ func (d *Display) syncBackFields() {
 		d.temporaryThumbnailPath = ""
 	}
 }
+
+// start event methods
 
 func (d *Display) onInstallPathDialogFinished(int) {
 	log.Println("Install Path Dialog closed")
@@ -603,6 +606,27 @@ func (d *Display) onVersionsDialogFinished(int) {
 	*d.activeSave = newS
 	if d.selectedSave != nil && *d.activeSave == *d.selectedSave {
 		d.onSaveSelectedChanged(d.saveSelector.CurrentIndex())
+	}
+}
+
+// end event methods
+
+func (d *Display) checkForUpdates() {
+	if !GlobalConfig.AutoCheck {
+		return
+	}
+	log.Println("Checking for updates")
+	_, _, ok := checkForRXSMUpdate()
+	if !ok {
+		log.Println("Checking for updates failed")
+		return
+	}
+	log.Println("Update available", IsOutOfDate)
+	if IsOutOfDate {
+		log.Println("New update download link "+DownloadURL)
+		if GlobalConfig.AutoInstall {
+			downloadRXSMUpdateQuiet()
+		}
 	}
 }
 

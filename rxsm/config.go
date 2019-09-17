@@ -32,6 +32,10 @@ type Config struct {
   SettingsIconPath string `json:"settings-icon"`
   SnapshotPeriod int64 `json:"snapshot-period"`
   Version string `json:"version"`
+  UpdateServer string  `json:"update-server"`
+  AutoCheck bool `json:"automatically-check-for-updates?"`
+  AutoInstall bool `json:"automatically-install-updates?"`
+  DoNotTrack bool `json:"do-not-track?"`
   lastVersion string
   path string
 }
@@ -46,6 +50,10 @@ func DefaultConfig() (c *Config) {
   c.ForceUniqueIds = false
   c.SettingsIconPath = "settings.svg"
   c.SnapshotPeriod = 0
+  c.UpdateServer = "https://rxsm-update.exmods.org"
+  c.AutoCheck = true
+  c.AutoInstall = false
+  c.DoNotTrack = true
   if runtime.GOOS == "windows" {
     c.BuildPath = filepath.FromSlash(os.Getenv("APPDATA")+"/../LocalLow/Freejam/RobocraftX/Games")
     c.PlayPath = filepath.FromSlash("C:/Program Files (x86)/Steam/steamapps/common/RobocraftX/"+ConfigPlayPathEnding)
@@ -103,6 +111,11 @@ func (c *Config) load(path string) (error) {
   c.SettingsIconPath = filepath.FromSlash(c.SettingsIconPath)
   c.lastVersion = c.Version
   c.Version = RXSMVersion
+  if c.DoNotTrack {
+    ExtraHeader["DNT"] = []string{DNT_ON}
+  } else {
+    ExtraHeader["DNT"] = []string{DNT_OFF}
+  }
   return nil
 }
 

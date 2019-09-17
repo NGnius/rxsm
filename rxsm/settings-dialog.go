@@ -49,12 +49,20 @@ type SettingsDialog struct {
   settingsIconField *widgets.QLineEdit
   snapshotPeriodLabel *widgets.QLabel
   snapshotPeriodField *widgets.QLineEdit
+  updateLabel *widgets.QLabel
+  autoCheckUpdate *widgets.QCheckBox
+  autoInstallUpdate *widgets.QCheckBox
+  doNotTrack *widgets.QCheckBox
+  updateServerLabel *widgets.QLabel
+  updateServerField *widgets.QLineEdit
   rxsmFiller *widgets.QLabel
   // about widgets
   iconLabel *widgets.QLabel
   rxsmVersionLabel *widgets.QLabel
   machineLabel *widgets.QLabel
   descriptionLabel *widgets.QLabel
+  updateButton *widgets.QPushButton
+  updateProgressBar *widgets.QProgressBar
   // bottom
   fillerLabel *widgets.QLabel
   okButton *widgets.QPushButton
@@ -157,6 +165,17 @@ func (sd *SettingsDialog) __init_display() {
   intValidator := gui.NewQIntValidator(nil)
   intValidator.SetBottom(0)
   sd.snapshotPeriodField.SetValidator(intValidator)
+  sd.updateLabel = widgets.NewQLabel2("&nbsp;&nbsp;&nbsp;&nbsp;<b>Updates</b>", nil, 0)
+  sd.autoCheckUpdate = widgets.NewQCheckBox2("Auto-Check", nil)
+  sd.autoCheckUpdate.SetToolTip("Check this to automatically check for updates")
+  sd.autoInstallUpdate = widgets.NewQCheckBox2("Auto-Update", nil)
+  sd.autoInstallUpdate.SetToolTip("Check this to automatically install updates")
+  sd.doNotTrack = widgets.NewQCheckBox2("D.N.T.", nil)
+  sd.doNotTrack.SetToolTip("Check this to send a Do Not Track header with all web communication")
+  sd.updateServerLabel = widgets.NewQLabel2("Update Server", nil, 0)
+  sd.updateServerField = widgets.NewQLineEdit(nil)
+  sd.updateServerField.SetToolTip("The server to use to check for updates")
+  sd.updateServerLabel.SetBuddy(sd.updateServerField)
   sd.rxsmFiller = widgets.NewQLabel2("", nil, 0)
 
   configLayout := widgets.NewQGridLayout2()
@@ -169,7 +188,13 @@ func (sd *SettingsDialog) __init_display() {
   configLayout.AddWidget3(sd.settingsIconField, 3, 1, 1, 2, 0)
   configLayout.AddWidget2(sd.snapshotPeriodLabel, 4, 0, 0)
   configLayout.AddWidget3(sd.snapshotPeriodField, 4, 1, 1, 2, 0)
-  configLayout.AddWidget3(sd.rxsmFiller, 5, 0, 2, 3, 0)
+  configLayout.AddWidget3(sd.updateLabel, 5, 0, 1, 3, 0)
+  configLayout.AddWidget2(sd.autoCheckUpdate, 6, 0, 0x0004)
+  configLayout.AddWidget2(sd.autoInstallUpdate, 6, 1, 0x0004)
+  configLayout.AddWidget2(sd.doNotTrack, 6, 2, 0x0004)
+  configLayout.AddWidget2(sd.updateServerLabel, 7, 0, 0)
+  configLayout.AddWidget3(sd.updateServerField, 7, 1, 1, 2, 0)
+  // configLayout.AddWidget3(sd.rxsmFiller, 7, 0, 1, 3, 0)
   sd.rxsmSettings.SetLayout(configLayout)
 
   // about tab
@@ -191,12 +216,20 @@ func (sd *SettingsDialog) __init_display() {
   sd.machineLabel.SetWordWrap(true)
   sd.machineLabel.SetAlignment(0x0004)
   sd.machineLabel.SetSizePolicy2(1,4)
+  sd.updateButton = widgets.NewQPushButton2("Check for Updates", nil)
+  sd.updateButton.ConnectClicked(sd.onUpdateButtonClicked)
+  sd.updateProgressBar = widgets.NewQProgressBar(nil)
+  sd.updateProgressBar.SetTextVisible(true)
+  sd.updateProgressBar.SetMaximum(UpdateSteps)
 
   aboutLayout := widgets.NewQGridLayout2()
   aboutLayout.AddWidget2(sd.iconLabel, 0, 0, 0)
   aboutLayout.AddWidget2(sd.descriptionLabel, 1, 0, 0)
   aboutLayout.AddWidget2(sd.rxsmVersionLabel, 2, 0, 0)
   aboutLayout.AddWidget2(sd.machineLabel, 3, 0, 0)
+  aboutLayout.AddWidget2(sd.updateButton, 4, 0, 0)
+  aboutLayout.AddWidget2(sd.updateProgressBar, 5, 0, 0)
+  sd.updateProgressBar.Hide()
   sd.aboutSettings.SetLayout(aboutLayout)
 
   // bottom
@@ -218,6 +251,7 @@ func (sd *SettingsDialog) __init_display() {
 func (sd *SettingsDialog) populateFields() {
   sd.populateSaveSettingsFields()
   sd.populateRXSMSettingsFields()
+  sd.populateAboutFields()
 }
 
 func (sd *SettingsDialog) populateSaveSettingsFields() {
@@ -242,6 +276,36 @@ func (sd *SettingsDialog) populateRXSMSettingsFields() {
   sd.appIconField.SetText(GlobalConfig.IconPath)
   sd.settingsIconField.SetText(GlobalConfig.SettingsIconPath)
   sd.snapshotPeriodField.SetText(strconv.Itoa(int(GlobalConfig.SnapshotPeriod)))
+  autoCheckCheck := core.Qt__Unchecked
+  if GlobalConfig.AutoCheck {
+    autoCheckCheck = core.Qt__Checked
+  }
+  sd.autoCheckUpdate.SetCheckState(autoCheckCheck)
+  autoInstallCheck := core.Qt__Unchecked
+  if GlobalConfig.AutoInstall {
+    autoInstallCheck = core.Qt__Checked
+  }
+  sd.autoInstallUpdate.SetCheckState(autoInstallCheck)
+  dntCheck := core.Qt__Unchecked
+  if GlobalConfig.DoNotTrack {
+    dntCheck = core.Qt__Checked
+  }
+  sd.doNotTrack.SetCheckState(dntCheck)
+  sd.updateServerField.SetText(GlobalConfig.UpdateServer)
+}
+
+func (sd *SettingsDialog) populateAboutFields() {
+  if IsOutOfDate {
+    sd.updateButton.SetEnabled(true)
+    sd.updateButton.SetText("Install Update")
+  } else if !IsUpdating {
+    sd.updateButton.SetEnabled(true)
+    sd.updateButton.SetText("Check for Updates")
+  }
+  if IsUpdating {
+    sd.updateButton.SetEnabled(false)
+    sd.updateButton.SetText("Updated (Restart Required)")
+  }
 }
 
 func (sd *SettingsDialog) syncBackFields() {
@@ -268,6 +332,54 @@ func (sd *SettingsDialog) syncBackRXSMSettings() {
     newPeriod = 0
   }
   GlobalConfig.SnapshotPeriod = newPeriod
+  GlobalConfig.AutoCheck = sd.autoCheckUpdate.IsChecked()
+  GlobalConfig.AutoInstall = sd.autoInstallUpdate.IsChecked()
+  GlobalConfig.DoNotTrack = sd.doNotTrack.IsChecked()
+  if GlobalConfig.DoNotTrack {
+    ExtraHeader["DNT"] = []string{DNT_ON}
+  } else {
+    ExtraHeader["DNT"] = []string{DNT_OFF}
+  }
+  GlobalConfig.UpdateServer = sd.updateServerField.Text()
+}
+
+func (sd *SettingsDialog) onUpdateButtonClicked(bool) {
+  // TODO: implement
+  if !IsOutOfDate {
+    go func(){
+      sd.updateProgressBar.SetFormat("Checking for Update")
+      sd.updateProgressBar.Show()
+      _, _, ok := checkForRXSMUpdate()
+      if !ok {
+        return
+      }
+      if IsOutOfDate {
+        sd.updateProgressBar.SetFormat("Update available")
+        sd.updateButton.SetText("Install Update")
+      }
+      sd.updateProgressBar.Hide()
+    }()
+  } else if DownloadURL != "" {
+    go func(){
+      success := true
+      sd.updateProgressBar.SetFormat("Updating - %p%")
+      sd.updateProgressBar.Show()
+      downloadRXSMUpdate(func(i int, text string){
+        sd.updateProgressBar.SetFormat(text+" - %p%")
+        if i == -1 {
+          success = false
+          return
+        }
+        sd.updateProgressBar.SetValue(i)
+      })
+      if !success {
+        return
+      }
+      sd.updateButton.SetEnabled(false)
+      sd.updateButton.SetText("Updated (Restart Required)")
+      sd.updateProgressBar.Hide()
+    }()
+  }
 }
 
 func (sd *SettingsDialog) onOkButtonClicked(bool) {

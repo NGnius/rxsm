@@ -68,17 +68,19 @@ func Import(path string, outFolder string) (saves []*Save, err error) {
   candidates := map[string]map[string]*zip.File {}
   resultChan := make(chan *Save)
   for _, f := range readCloser.Reader.File {
-    baseFolder, filename := filepath.Split(f.FileHeader.Name)
-    submap, ok := candidates[baseFolder]
-    if !ok {
-      submap = map[string]*zip.File {}
-    }
-    if filename == GameDataFile || filename == GameSaveFile || filename == ThumbnailFile {
-      submap[filename] = f
-      ok = true
-    }
-    if ok {
-      candidates[baseFolder] = submap
+    if !f.FileHeader.Mode().IsDir() {
+      baseFolder, filename := filepath.Split(f.FileHeader.Name)
+      submap, ok := candidates[baseFolder]
+      if !ok {
+        submap = map[string]*zip.File {}
+      }
+      if filename == GameDataFile || filename == GameSaveFile || filename == ThumbnailFile {
+        submap[filename] = f
+        ok = true
+      }
+      if ok {
+        candidates[baseFolder] = submap
+      }
     }
   }
   err = os.MkdirAll(outFolder, os.ModeDir | os.ModePerm)

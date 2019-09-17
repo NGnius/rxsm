@@ -9,5 +9,9 @@
   "force-unique-ids?": true,
   "settings-icon": "resources/icon/rxsm-settings.svg",
   "snapshot-period": 0,
-  "version": "v1.0.0"
+  "version": "v1.0.0",
+  "update-server": "https://rxsm-update.exmods.org",
+  "automatically-check-for-updates?": true,
+  "automatically-install-updates?": false,
+  "do-not-track?": true
 }
