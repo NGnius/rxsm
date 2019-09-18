@@ -15,8 +15,10 @@ rm -f moc* # auto generated files
 mkdir ./deploy/linux/default_save
 cd ..
 cp ./resources/default_save/** ./rxsm/deploy/linux/default_save
-cp ./resources/icon/rxsm-dual.svg ./rxsm/deploy/linux/icon.svg
-cp ./resources/icon/rxsm-dual-notext.svg ./rxsm/deploy/linux/icon-min.svg
-cp ./resources/icon/rxsm-settings.svg ./rxsm/deploy/linux/settings.svg
+mkdir ./rxsm/deploy/linux/icons
+cp ./resources/exmods-icons/assets/*.svg ./rxsm/deploy/linux/icons
+cp ./resources/exmods-icons/logos/rxsm-dual.svg ./rxsm/deploy/linux/icon.svg
+cp ./resources/exmods-icons/logos/rxsm-dual-notext.svg ./rxsm/deploy/linux/icon-min.svg
+cp ./resources/exmods-icons/assets/gear.svg ./rxsm/deploy/linux/settings.svg
 cp README.md ./rxsm/deploy/linux/INFO.md
 exit 0

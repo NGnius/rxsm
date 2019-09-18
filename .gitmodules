@@ -1,0 +1,3 @@
+[submodule "resources/exmods-icons"]
+	path = resources/exmods-icons
+	url = https://git.exmods.org/ExMods/theme
