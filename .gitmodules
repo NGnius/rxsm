@@ -1,0 +1,3 @@
+[submodule "rxsm-updater"]
+	path = rxsm-updater
+	url = https://git.exmods.org/rxsm/rxsm-updater
