@@ -1,3 +1,6 @@
 [submodule "rxsm-updater"]
 	path = rxsm-updater
 	url = https://git.exmods.org/rxsm/rxsm-updater
+[submodule "resources/exmods-icons"]
+	path = resources/exmods-icons
+	url = https://git.exmods.org/ExMods/theme

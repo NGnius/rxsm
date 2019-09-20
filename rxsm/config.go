@@ -29,7 +29,7 @@ type Config struct {
   DefaultSaveFolder string `json:"copyable-save"`
   IconPath string `json:"icon"`
   ForceUniqueIds bool `json:"force-unique-ids?"`
-  SettingsIconPath string `json:"settings-icon"`
+  IconPackPath string `json:"icon-pack"`
   SnapshotPeriod int64 `json:"snapshot-period"`
   Version string `json:"version"`
   UpdateServer string  `json:"update-server"`
@@ -48,7 +48,7 @@ func DefaultConfig() (c *Config) {
   c.DefaultSaveFolder = "default_save"
   c.IconPath = "icon.svg"
   c.ForceUniqueIds = false
-  c.SettingsIconPath = "settings.svg"
+  c.IconPackPath = "icons"
   c.SnapshotPeriod = 0
   c.UpdateServer = "https://rxsm-update.exmods.org"
   c.AutoCheck = true
@@ -108,7 +108,7 @@ func (c *Config) load(path string) (error) {
   c.BuildPath = filepath.FromSlash(c.BuildPath)
   c.LogPath = filepath.FromSlash(c.LogPath)
   c.IconPath = filepath.FromSlash(c.IconPath)
-  c.SettingsIconPath = filepath.FromSlash(c.SettingsIconPath)
+  c.IconPackPath = filepath.FromSlash(c.IconPackPath)
   c.lastVersion = c.Version
   c.Version = RXSMVersion
   if c.DoNotTrack {

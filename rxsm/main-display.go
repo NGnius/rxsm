@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"time" // import performance stats
+	"path/filepath"
 
 	"github.com/therecipe/qt/widgets"
 	"github.com/therecipe/qt/gui"
@@ -19,6 +20,15 @@ const (
 
 var (
 	NewInstallPath string
+	SettingsIconPath = filepath.FromSlash("gear.svg")
+	NewIconPath = filepath.FromSlash("new.svg")
+	ImportIconPath = filepath.FromSlash("import-zip.svg")
+	ExportIconPath = filepath.FromSlash("export-zip.svg")
+	CopyIconPath = filepath.FromSlash("duplicate.svg")
+	SaveIconPath = filepath.FromSlash("floppy.svg")
+	CancelIconPath = filepath.FromSlash("cancel.svg")
+	ToggleIconPath = filepath.FromSlash("")
+	VersionsIconPath = filepath.FromSlash("")
 )
 // start Display
 type IDisplayGoroutine interface {
@@ -101,7 +111,7 @@ func (d *Display) Run() {
 	d.modeTab.ConnectCurrentChanged(d.onModeTabChanged)
 	d.settingsButton = widgets.NewQPushButton2("", nil)
 	// prefer theme icon, but fallback to RXSM settings icon
-	var fallBackIcon *gui.QIcon = gui.NewQIcon5(GlobalConfig.SettingsIconPath)
+	var fallBackIcon *gui.QIcon = gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, SettingsIconPath))
 	d.settingsIcon = fallBackIcon.FromTheme("settings")
 	if d.settingsIcon.IsNull() {
 		log.Println("Falling back to RXSM settings icon")
@@ -111,16 +121,25 @@ func (d *Display) Run() {
 	d.settingsButton.SetToolTip("Settings")
 	d.settingsButton.ConnectClicked(d.onSettingsButtonClicked)
 	d.importButton = widgets.NewQPushButton2("Import", nil)
+	d.importButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, ImportIconPath)))
+	d.importButton.SetToolTip("Import saves from a zip file")
 	d.importButton.ConnectClicked(d.onImportButtonClicked)
 	d.exportButton = widgets.NewQPushButton2("Export", nil)
+	d.exportButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, ExportIconPath)))
+	d.exportButton.SetToolTip("Export selected save to a zip file")
 	d.exportButton.ConnectClicked(d.onExportButtonClicked)
 
 	d.saveSelector = widgets.NewQComboBox(nil)
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
+	d.saveSelector.SetToolTip("Selected save")
 	d.saveSelector.ConnectCurrentIndexChanged(d.onSaveSelectedChanged)
 	d.copySaveButton = widgets.NewQPushButton2("Copy", nil)
+	d.copySaveButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, CopyIconPath)))
+	d.copySaveButton.SetToolTip("Duplicate the selected save")
 	d.copySaveButton.ConnectClicked(d.onCopySaveButtonClicked)
 	d.newSaveButton = widgets.NewQPushButton2("New", nil)
+	d.newSaveButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, NewIconPath)))
+	d.newSaveButton.SetToolTip("Create a new save, using default_save")
 	d.newSaveButton.ConnectClicked(d.onNewSaveButtonClicked)
 
 	d.nameField = widgets.NewQLineEdit(nil)
@@ -129,21 +148,33 @@ func (d *Display) Run() {
 	d.thumbnailImage = gui.NewQIcon5("")
 	d.thumbnailButton = widgets.NewQPushButton2("", d.window)
 	d.thumbnailButton.SetSizePolicy(widgets.NewQSizePolicy2(2, 1, 0x00000001))
+	d.thumbnailButton.SetToolTip("Select the JPG thumbnail for the selected save")
 	d.thumbnailButton.ConnectClicked(d.onThumbnailButtonClicked)
 	d.thumbnailButton.SetIconSize(d.thumbnailButton.Size())
 	d.idLabel = widgets.NewQLabel2("ID: ##", nil, 0)
+	d.idLabel.SetToolTip("GameID of the selected save")
 	d.descriptionLabel = widgets.NewQLabel2("Description", nil, 0)
 	d.descriptionField = widgets.NewQPlainTextEdit(nil)
+	d.descriptionField.SetToolTip("Game save description")
 
 	d.saveButton = widgets.NewQPushButton2("Save", nil)
+	d.saveButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, SaveIconPath)))
+	d.saveButton.SetToolTip("Save changes to input fields")
 	d.saveButton.ConnectClicked(d.onSaveButtonClicked)
 	d.cancelButton = widgets.NewQPushButton2("Cancel", nil)
+	d.cancelButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, CancelIconPath)))
+	d.cancelButton.SetToolTip("Revert changes to input fields")
 	d.cancelButton.ConnectClicked(d.onCancelButtonClicked)
 	d.activateCheckbox = widgets.NewQCheckBox2("Activated", nil)
+	d.activateCheckbox.SetToolTip("Make RobocraftX load the selected save")
 	d.activateCheckbox.ConnectStateChanged(d.onActivateChecked)
 	d.moveButton = widgets.NewQPushButton2("Toggle Location", nil)
+	d.moveButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, ToggleIconPath)))
+	d.moveButton.SetToolTip("Move the selected save")
 	d.moveButton.ConnectClicked(d.onMoveToButtonClicked)
 	d.versionsButton = widgets.NewQPushButton2("Versions", nil)
+	d.versionsButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, VersionsIconPath)))
+	d.versionsButton.SetToolTip("View revisions of the active save")
 	d.versionsButton.ConnectClicked(d.onVersionsButtonClicked)
 
 	// populate fields

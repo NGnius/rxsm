@@ -15,7 +15,7 @@ import (
 )
 
 const (
-  RXSMVersion string = "v1.0.0"
+  RXSMVersion string = "v1.1.0"
   RXSMPlatformStream string = "test"
   UpdateSteps int = 2
   DownloadTempFile = "rxsm-update.zip"

@@ -45,8 +45,8 @@ type SettingsDialog struct {
   logField *widgets.QLineEdit
   appIconLabel *widgets.QLabel
   appIconField *widgets.QLineEdit
-  settingsIconLabel *widgets.QLabel
-  settingsIconField *widgets.QLineEdit
+  iconPackLabel *widgets.QLabel
+  iconPackField *widgets.QLineEdit
   snapshotPeriodLabel *widgets.QLabel
   snapshotPeriodField *widgets.QLineEdit
   updateLabel *widgets.QLabel
@@ -150,14 +150,14 @@ func (sd *SettingsDialog) __init_display() {
   sd.logField = widgets.NewQLineEdit(nil)
   sd.logField.SetToolTip("The file to write log events to (all parent folders must exist already)")
   sd.logLabel.SetBuddy(sd.logField)
-  sd.appIconLabel = widgets.NewQLabel2("App Icon Path", nil, 0)
+  sd.appIconLabel = widgets.NewQLabel2("App Logo Path", nil, 0)
   sd.appIconField = widgets.NewQLineEdit(nil)
   sd.appIconField.SetToolTip("The icon file (.svg or .jpg) to use as RXSM's logo")
   sd.appIconLabel.SetBuddy(sd.appIconField)
-  sd.settingsIconLabel = widgets.NewQLabel2("Settings Icon Path", nil, 0)
-  sd.settingsIconField = widgets.NewQLineEdit(nil)
-  sd.settingsIconField.SetToolTip("The icon file (.svg or .jpg) to use as the settings button")
-  sd.settingsIconLabel.SetBuddy(sd.settingsIconField)
+  sd.iconPackLabel = widgets.NewQLabel2("Icon Folder Path", nil, 0)
+  sd.iconPackField = widgets.NewQLineEdit(nil)
+  sd.iconPackField.SetToolTip("The icon folder containing icon files (.svg or .jpg) for RXSM to use ")
+  sd.iconPackLabel.SetBuddy(sd.iconPackField)
   sd.snapshotPeriodLabel = widgets.NewQLabel2("Snapshot Period (ns)", nil, 0)
   sd.snapshotPeriodField = widgets.NewQLineEdit(nil)
   sd.snapshotPeriodField.SetToolTip("The time (in nanoseconds) between automatic snapshots of the active save (0=disable)")
@@ -184,8 +184,8 @@ func (sd *SettingsDialog) __init_display() {
   configLayout.AddWidget3(sd.logField, 1, 1, 1, 2, 0)
   configLayout.AddWidget2(sd.appIconLabel, 2, 0, 0)
   configLayout.AddWidget3(sd.appIconField, 2, 1, 1, 2, 0)
-  configLayout.AddWidget2(sd.settingsIconLabel, 3, 0, 0)
-  configLayout.AddWidget3(sd.settingsIconField, 3, 1, 1, 2, 0)
+  configLayout.AddWidget2(sd.iconPackLabel, 3, 0, 0)
+  configLayout.AddWidget3(sd.iconPackField, 3, 1, 1, 2, 0)
   configLayout.AddWidget2(sd.snapshotPeriodLabel, 4, 0, 0)
   configLayout.AddWidget3(sd.snapshotPeriodField, 4, 1, 1, 2, 0)
   configLayout.AddWidget3(sd.updateLabel, 5, 0, 1, 3, 0)
@@ -274,7 +274,7 @@ func (sd *SettingsDialog) populateSaveSettingsFields() {
 func (sd *SettingsDialog) populateRXSMSettingsFields() {
   sd.logField.SetText(GlobalConfig.LogPath)
   sd.appIconField.SetText(GlobalConfig.IconPath)
-  sd.settingsIconField.SetText(GlobalConfig.SettingsIconPath)
+  sd.iconPackField.SetText(GlobalConfig.IconPackPath)
   sd.snapshotPeriodField.SetText(strconv.Itoa(int(GlobalConfig.SnapshotPeriod)))
   autoCheckCheck := core.Qt__Unchecked
   if GlobalConfig.AutoCheck {
@@ -326,7 +326,7 @@ func (sd *SettingsDialog) syncBackSaveSettings() {
 func (sd *SettingsDialog) syncBackRXSMSettings() {
   GlobalConfig.LogPath = filepath.FromSlash(sd.logField.Text())
   GlobalConfig.IconPath = filepath.FromSlash(sd.appIconField.Text())
-  GlobalConfig.SettingsIconPath = filepath.FromSlash(sd.settingsIconField.Text())
+  GlobalConfig.IconPackPath = filepath.FromSlash(sd.iconPackField.Text())
   newPeriod, parseErr := strconv.ParseInt(sd.snapshotPeriodField.Text(), 10, 64)
   if parseErr != nil {
     newPeriod = 0
