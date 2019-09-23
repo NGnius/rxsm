@@ -1,6 +1,6 @@
 {
-  "GameID": 42,
-  "GameName": "Default Save",
-  "GameDescription": "Save information structural placeholder",
-  "CreatorName": "rxsm"
+  "GameID":9999,   
+  "GameName":"Default Save",
+  "GameDescription":"Your game's description. You should probably replace these fields with something more relevant.",
+  "CreatorName":"Unknown"
 }
