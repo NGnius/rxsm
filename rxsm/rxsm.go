@@ -9,13 +9,12 @@ import (
   "log"
   "runtime"
   "strconv"
-  "fmt"
   "archive/zip"
   "syscall"
 )
 
 const (
-  RXSMVersion string = "v1.1.0"
+  RXSMVersion string = "v2.0.0"
   RXSMPlatformStream string = "test"
   UpdateSteps int = 2
   DownloadTempFile = "rxsm-update.zip"
@@ -100,7 +99,7 @@ func parseRunArgs() (exit bool) {
         }
       }
       versionStr += GlobalConfig.Version
-      fmt.Println(versionStr)
+      log.Println(versionStr)
       exit = true
     }
   }
@@ -201,8 +200,8 @@ func downloadRXSMUpdate(statusCallback func(progress int, description string)) {
 
 func installRXSMUpdate() (pid int, err error) {
   if runtime.GOOS == "windows" {
-    return syscall.ForkExec("rxsm-updater.exe", []string{}, nil)
+    return syscall.ForkExec("./rxsm-updater.exe", []string{".\\rxsm-updater.exe", "--wait", "5s", "--log", "--zip", DownloadTempFile}, nil)
   } else {
-    return syscall.ForkExec("rxsm-updater", []string{}, nil)
+    return syscall.ForkExec("./rxsm-updater", []string{"./rxsm-updater", "--wait", "5s", "--log", "--zip", DownloadTempFile}, nil)
   }
 }
