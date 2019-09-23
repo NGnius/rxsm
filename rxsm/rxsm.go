@@ -200,8 +200,8 @@ func downloadRXSMUpdate(statusCallback func(progress int, description string)) {
 
 func installRXSMUpdate() (pid int, err error) {
   if runtime.GOOS == "windows" {
-    return syscall.ForkExec("./rxsm-updater.exe", []string{".\\rxsm-updater.exe", "--wait", "5s", "--log", "--zip", DownloadTempFile}, nil)
+    return syscall.ForkExec("./rxsm-updater.exe", []string{".\\rxsm-updater.exe", "--wait", "1s", "--log", "--zip", DownloadTempFile}, nil)
   } else {
-    return syscall.ForkExec("./rxsm-updater", []string{"./rxsm-updater", "--wait", "5s", "--log", "--zip", DownloadTempFile}, nil)
+    return syscall.ForkExec("./rxsm-updater", []string{"./rxsm-updater", "--wait", "1s", "--log", "--zip", DownloadTempFile}, nil)
   }
 }
