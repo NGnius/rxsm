@@ -27,8 +27,9 @@ var (
 	CopyIconPath = filepath.FromSlash("duplicate.svg")
 	SaveIconPath = filepath.FromSlash("floppy.svg")
 	CancelIconPath = filepath.FromSlash("cancel.svg")
+	ActiveIconPath = filepath.FromSlash("active.svg")
 	ToggleIconPath = filepath.FromSlash("")
-	VersionsIconPath = filepath.FromSlash("")
+	VersionsIconPath = filepath.FromSlash("fork.svg")
 )
 // start Display
 type IDisplayGoroutine interface {
@@ -166,6 +167,7 @@ func (d *Display) Run() {
 	d.cancelButton.SetToolTip("Revert changes to input fields")
 	d.cancelButton.ConnectClicked(d.onCancelButtonClicked)
 	d.activateCheckbox = widgets.NewQCheckBox2("Activated", nil)
+	d.activateCheckbox.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, ActiveIconPath)))
 	d.activateCheckbox.SetToolTip("Make RobocraftX load the selected save")
 	d.activateCheckbox.ConnectStateChanged(d.onActivateChecked)
 	d.moveButton = widgets.NewQPushButton2("Toggle Location", nil)
