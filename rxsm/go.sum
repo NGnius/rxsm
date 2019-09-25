@@ -56,6 +56,8 @@ github.com/therecipe/qt v0.0.0-20190914193131-4c875570321e h1:ralwiYe77HLSNZzbnn
 github.com/therecipe/qt v0.0.0-20190914193131-4c875570321e/go.mod h1:SUUR2j3aE1z6/g76SdD6NwACEpvCxb3fvG82eKbD6us=
 github.com/therecipe/qt/internal/binding/files/docs/5.13.0 v0.0.0-20190914193131-4c875570321e h1:Bl9W/h6HkObONpu3jsL9jmrPQMhB0+fmuXApSJEmDuc=
 github.com/therecipe/qt/internal/binding/files/docs/5.13.0 v0.0.0-20190914193131-4c875570321e/go.mod h1:mH55Ek7AZcdns5KPp99O0bg+78el64YCYWHiQKrOdt4=
+github.com/therecipe/qt/internal/binding/files/docs/5.13.0 v0.0.0-20190924211142-521980c88788 h1:FfkdQ1ypwbc96fnOoO09/f1Sl1rn+GVlj5X2KXlMv8w=
+github.com/therecipe/qt/internal/binding/files/docs/5.13.0 v0.0.0-20190924211142-521980c88788/go.mod h1:mH55Ek7AZcdns5KPp99O0bg+78el64YCYWHiQKrOdt4=
 github.com/xanzy/ssh-agent v0.2.1 h1:TCbipTQL2JiiCprBWx9frJ2eJlCYT00NmctrHxVAr70=
 github.com/xanzy/ssh-agent v0.2.1/go.mod h1:mLlQY/MoOhWBj+gOGMQkOeiEvkx+8pJSI+0Bx9h2kr4=
 golang.org/x/crypto v0.0.0-20190219172222-a4c6cb3142f2/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

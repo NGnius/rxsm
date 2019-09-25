@@ -10,12 +10,11 @@ import (
   "runtime"
   "strconv"
   "archive/zip"
-  "syscall"
 )
 
 const (
   RXSMVersion string = "v2.0.0"
-  RXSMPlatformStream string = "test"
+  RXSMPlatformStream string = "release"
   UpdateSteps int = 2
   DownloadTempFile = "rxsm-update.zip"
 )
@@ -74,12 +73,12 @@ func main() {
     exitVal = 0
   }
   if IsUpdating {
-    pid, forkErr := installRXSMUpdate()
+    process, forkErr := installRXSMUpdate()
     if forkErr != nil {
       log.Println("Install failed")
       log.Println(forkErr)
     } else {
-      log.Println("Forked install binary to", pid)
+      log.Println("Forked install binary to pid", process.Pid)
     }
   }
   log.Println("rxsm terminated")
@@ -198,10 +197,10 @@ func downloadRXSMUpdate(statusCallback func(progress int, description string)) {
   IsUpdating = true
 }
 
-func installRXSMUpdate() (pid int, err error) {
+func installRXSMUpdate() (process *os.Process, err error) {
   if runtime.GOOS == "windows" {
-    return syscall.ForkExec("./rxsm-updater.exe", []string{".\\rxsm-updater.exe", "--wait", "1s", "--log", "--zip", DownloadTempFile}, nil)
+    return os.StartProcess(".\\rxsm-updater.exe", []string{".\\rxsm-updater.exe", "--wait", "1s", "--log", "--zip", DownloadTempFile}, nil)
   } else {
-    return syscall.ForkExec("./rxsm-updater", []string{"./rxsm-updater", "--wait", "1s", "--log", "--zip", DownloadTempFile}, nil)
+    return os.StartProcess("./rxsm-updater", []string{"./rxsm-updater", "--wait", "1s", "--log", "--zip", DownloadTempFile}, nil)
   }
 }
