@@ -3,34 +3,35 @@
 package main
 
 import (
-	"strconv"
 	"log"
 	"os"
-	"time" // import performance stats
 	"path/filepath"
+	"strconv"
+	"time" // import performance stats
 
-	"github.com/therecipe/qt/widgets"
 	"github.com/therecipe/qt/gui"
+	"github.com/therecipe/qt/widgets"
 )
 
 const (
 	BUILD_MODE = 0
-	PLAY_MODE = 1
+	PLAY_MODE  = 1
 )
 
 var (
-	NewInstallPath string
+	NewInstallPath   string
 	SettingsIconPath = filepath.FromSlash("gear.svg")
-	NewIconPath = filepath.FromSlash("new.svg")
-	ImportIconPath = filepath.FromSlash("import-zip.svg")
-	ExportIconPath = filepath.FromSlash("export-zip.svg")
-	CopyIconPath = filepath.FromSlash("duplicate.svg")
-	SaveIconPath = filepath.FromSlash("floppy.svg")
-	CancelIconPath = filepath.FromSlash("cancel.svg")
-	ActiveIconPath = filepath.FromSlash("active.svg")
-	ToggleIconPath = filepath.FromSlash("")
+	NewIconPath      = filepath.FromSlash("new.svg")
+	ImportIconPath   = filepath.FromSlash("import-zip.svg")
+	ExportIconPath   = filepath.FromSlash("export-zip.svg")
+	CopyIconPath     = filepath.FromSlash("duplicate.svg")
+	SaveIconPath     = filepath.FromSlash("floppy.svg")
+	CancelIconPath   = filepath.FromSlash("cancel.svg")
+	ActiveIconPath   = filepath.FromSlash("active.svg")
+	ToggleIconPath   = filepath.FromSlash("")
 	VersionsIconPath = filepath.FromSlash("fork.svg")
 )
+
 // start Display
 type IDisplayGoroutine interface {
 	Run()
@@ -39,46 +40,46 @@ type IDisplayGoroutine interface {
 }
 
 type Display struct {
-	selectedSave *Save
-	activeSave *Save
-	activeMode int
-	activeSaves *[]Save
-	saveHandler SaveHandler
-	saveVersioner ISaveVersioner
-	exitStatus int
-	firstTime bool
+	selectedSave           *Save
+	activeSave             *Save
+	activeMode             int
+	activeSaves            *[]Save
+	saveHandler            SaveHandler
+	saveVersioner          ISaveVersioner
+	exitStatus             int
+	firstTime              bool
 	temporaryThumbnailPath string
-	endChan chan int
+	endChan                chan int
 	// Qt GUI objects
-	window *widgets.QMainWindow
-	app *widgets.QApplication
-	modeTab *widgets.QTabBar
-	settingsButton *widgets.QPushButton
-	settingsIcon *gui.QIcon
-	importButton *widgets.QPushButton
-	exportButton *widgets.QPushButton
-	saveSelector *widgets.QComboBox
-	copySaveButton *widgets.QPushButton
-	newSaveButton *widgets.QPushButton
-	nameField *widgets.QLineEdit
-	creatorLabel *widgets.QLabel
-	creatorField *widgets.QLineEdit
-	thumbnailImage *gui.QIcon
-	thumbnailButton *widgets.QPushButton
-	idLabel *widgets.QLabel
-	descriptionLabel *widgets.QLabel
-	descriptionField *widgets.QPlainTextEdit
-	saveButton *widgets.QPushButton
-	cancelButton *widgets.QPushButton
-	activateCheckbox *widgets.QCheckBox
-	moveButton *widgets.QPushButton
-	versionsButton *widgets.QPushButton
+	window            *widgets.QMainWindow
+	app               *widgets.QApplication
+	modeTab           *widgets.QTabBar
+	settingsButton    *widgets.QPushButton
+	settingsIcon      *gui.QIcon
+	importButton      *widgets.QPushButton
+	exportButton      *widgets.QPushButton
+	saveSelector      *widgets.QComboBox
+	copySaveButton    *widgets.QPushButton
+	newSaveButton     *widgets.QPushButton
+	nameField         *widgets.QLineEdit
+	creatorLabel      *widgets.QLabel
+	creatorField      *widgets.QLineEdit
+	thumbnailImage    *gui.QIcon
+	thumbnailButton   *widgets.QPushButton
+	idLabel           *widgets.QLabel
+	descriptionLabel  *widgets.QLabel
+	descriptionField  *widgets.QPlainTextEdit
+	saveButton        *widgets.QPushButton
+	cancelButton      *widgets.QPushButton
+	activateCheckbox  *widgets.QCheckBox
+	moveButton        *widgets.QPushButton
+	versionsButton    *widgets.QPushButton
 	installPathDialog *InstallPathDialog
-	settingsDialog *SettingsDialog
+	settingsDialog    *SettingsDialog
 }
 
-func NewDisplay(saveHandler SaveHandler) (*Display){
-	newD := Display {endChan: make(chan int, 1), saveHandler:saveHandler, firstTime:true}
+func NewDisplay(saveHandler SaveHandler) *Display {
+	newD := Display{endChan: make(chan int, 1), saveHandler: saveHandler, firstTime: true}
 	newD.activeSave = saveHandler.ActiveBuildSave()
 	return &newD
 }
@@ -87,7 +88,7 @@ func (d *Display) Run() {
 	d.activeMode = BUILD_MODE
 	d.activeSaves = &d.saveHandler.BuildSaves
 	if d.activeSave != nil {
-		log.Println("Active save on startup "+strconv.Itoa(d.activeSave.Data.Id))
+		log.Println("Active save on startup " + strconv.Itoa(d.activeSave.Data.Id))
 		sv, svErr := NewSaveVersioner(d.activeSave)
 		if svErr != nil {
 			log.Println("Error creating SaveVersioner for active save")
@@ -272,7 +273,7 @@ func (d *Display) Start() {
 }
 
 func (d *Display) Join() (int, error) {
-	return <- d.endChan, nil
+	return <-d.endChan, nil
 }
 
 func (d *Display) populateFields() {
@@ -281,7 +282,7 @@ func (d *Display) populateFields() {
 	}
 	d.nameField.SetText(d.selectedSave.Data.Name)
 	d.creatorField.SetText(d.selectedSave.Data.Creator)
-	d.idLabel.SetText("ID: "+DoubleDigitStr(d.selectedSave.Data.Id))
+	d.idLabel.SetText("ID: " + DoubleDigitStr(d.selectedSave.Data.Id))
 	d.descriptionField.SetPlainText(d.selectedSave.Data.Description)
 	d.thumbnailImage.Swap(gui.NewQIcon5(d.selectedSave.ThumbnailPath()))
 	d.thumbnailButton.SetIcon(d.thumbnailImage)
@@ -300,7 +301,7 @@ func (d *Display) syncBackFields() {
 	if d.temporaryThumbnailPath != d.selectedSave.ThumbnailPath() && d.temporaryThumbnailPath != "" {
 		copyErr := d.saveHandler.CopyTo(d.temporaryThumbnailPath, d.selectedSave.ThumbnailPath())
 		if copyErr != nil {
-			log.Print("Error while copying Thumbnail from "+d.temporaryThumbnailPath+" to "+d.selectedSave.ThumbnailPath())
+			log.Print("Error while copying Thumbnail from " + d.temporaryThumbnailPath + " to " + d.selectedSave.ThumbnailPath())
 			log.Println(copyErr)
 		}
 		d.temporaryThumbnailPath = ""
@@ -339,7 +340,7 @@ func (d *Display) onModeTabChanged(tabIndex int) {
 	d.saveSelector.Clear()
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
 	// propagation calls d.onSaveSelectedChanged(d.saveSelector.CurrentIndex())
-	log.Println("Switched to mode "+strconv.Itoa(d.activeMode))
+	log.Println("Switched to mode " + strconv.Itoa(d.activeMode))
 }
 
 func (d *Display) onSaveSelectedChanged(index int) {
@@ -348,7 +349,7 @@ func (d *Display) onSaveSelectedChanged(index int) {
 	}
 	d.selectedSave = &(*d.activeSaves)[index]
 	d.populateFields()
-	log.Println("Selected "+strconv.Itoa(d.selectedSave.Data.Id))
+	log.Println("Selected " + strconv.Itoa(d.selectedSave.Data.Id))
 }
 
 func (d *Display) onCopySaveButtonClicked(bool) {
@@ -377,9 +378,9 @@ func (d *Display) onCopySaveButtonClicked(bool) {
 		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, dupSave)
 	}
 	d.saveSelector.AddItems(makeSelectorOptions([]Save{dupSave}))
-	log.Println("Copied save "+strconv.Itoa(d.selectedSave.Data.Id)+" to "+strconv.Itoa(dupSave.Data.Id))
+	log.Println("Copied save " + strconv.Itoa(d.selectedSave.Data.Id) + " to " + strconv.Itoa(dupSave.Data.Id))
 	// select copied save
-	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
+	d.saveSelector.SetCurrentIndex(len(*d.activeSaves) - 1)
 	// propagation calls d.onSaveSelectedChanged(len(*d.activeSaves)-1)
 }
 
@@ -406,9 +407,9 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, newSave)
 	}
 	d.saveSelector.AddItems(makeSelectorOptions([]Save{newSave}))
-	log.Println("Created new save "+strconv.Itoa(newSave.Data.Id))
+	log.Println("Created new save " + strconv.Itoa(newSave.Data.Id))
 	// select newly created save
-	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
+	d.saveSelector.SetCurrentIndex(len(*d.activeSaves) - 1)
 	// propagation calls d.onSaveSelectedChanged(len(*d.activeSaves)-1)
 }
 
@@ -423,7 +424,7 @@ func (d *Display) onSettingsButtonClicked(bool) {
 
 func (d *Display) onSettingsDialogFinished(i int) {
 	// Nothing happens here
-	log.Println("Settings window closed with code "+strconv.Itoa(i))
+	log.Println("Settings window closed with code " + strconv.Itoa(i))
 }
 
 func (d *Display) onImportButtonClicked(bool) {
@@ -437,7 +438,7 @@ func (d *Display) onImportButtonClicked(bool) {
 		case BUILD_MODE:
 			importedSaves, importErr = Import(importPath, d.saveHandler.BuildPath())
 			if importErr != nil {
-				log.Println("Import from "+importPath+" to "+d.saveHandler.BuildPath()+" failed")
+				log.Println("Import from " + importPath + " to " + d.saveHandler.BuildPath() + " failed")
 				log.Println(importErr)
 				return
 			}
@@ -448,7 +449,7 @@ func (d *Display) onImportButtonClicked(bool) {
 		case PLAY_MODE:
 			importedSaves, importErr = Import(importPath, d.saveHandler.PlayPath())
 			if importErr != nil {
-				log.Println("Import from "+importPath+" to "+d.saveHandler.PlayPath()+" failed")
+				log.Println("Import from " + importPath + " to " + d.saveHandler.PlayPath() + " failed")
 				log.Println(importErr)
 				return
 			}
@@ -457,7 +458,7 @@ func (d *Display) onImportButtonClicked(bool) {
 				d.saveSelector.AddItems(makeSelectorOptions([]Save{*save}))
 			}
 		}
-		log.Println("Imported "+strconv.Itoa(len(importedSaves))+" saves in "+strconv.FormatFloat(time.Since(importStart).Seconds(), 'f', -1, 64)+"s")
+		log.Println("Imported " + strconv.Itoa(len(importedSaves)) + " saves in " + strconv.FormatFloat(time.Since(importStart).Seconds(), 'f', -1, 64) + "s")
 	}
 }
 
@@ -467,11 +468,11 @@ func (d *Display) onExportButtonClicked(bool) {
 	if exportPath != "" {
 		exportErr := Export(exportPath, *d.selectedSave)
 		if exportErr != nil {
-			log.Println("Export to "+exportPath+" failed for "+strconv.Itoa(d.selectedSave.Data.Id))
+			log.Println("Export to " + exportPath + " failed for " + strconv.Itoa(d.selectedSave.Data.Id))
 			log.Println(exportErr)
 			return
 		} else {
-			log.Println("Exported save "+strconv.Itoa(d.selectedSave.Data.Id)+" to "+exportPath)
+			log.Println("Exported save " + strconv.Itoa(d.selectedSave.Data.Id) + " to " + exportPath)
 		}
 	} else {
 		log.Println("Export file dialog dismissed")
@@ -484,7 +485,7 @@ func (d *Display) onThumbnailButtonClicked(bool) {
 	if d.temporaryThumbnailPath != "" {
 		d.thumbnailImage.Swap(gui.NewQIcon5(d.temporaryThumbnailPath))
 		d.thumbnailButton.SetIcon(d.thumbnailImage)
-		log.Println("Thumbnail temporarily set to "+d.temporaryThumbnailPath)
+		log.Println("Thumbnail temporarily set to " + d.temporaryThumbnailPath)
 	} else {
 		log.Println("Thumbnail button clicked but dialog cancelled")
 	}
@@ -498,12 +499,12 @@ func (d *Display) onSaveButtonClicked(bool) {
 	}
 	index := d.saveSelector.CurrentIndex()
 	d.saveSelector.SetItemText(index, makeSelectorOptions(*d.activeSaves)[index])
-	log.Println("Saved "+strconv.Itoa(d.selectedSave.Data.Id))
+	log.Println("Saved " + strconv.Itoa(d.selectedSave.Data.Id))
 }
 
 func (d *Display) onCancelButtonClicked(bool) {
 	d.populateFields()
-	log.Println("Canceled "+strconv.Itoa(d.selectedSave.Data.Id))
+	log.Println("Canceled " + strconv.Itoa(d.selectedSave.Data.Id))
 }
 
 func (d *Display) onActivateChecked(checkState int) {
@@ -519,7 +520,7 @@ func (d *Display) onActivateChecked(checkState int) {
 		}
 		moveErr := d.activeSave.MoveToId()
 		if moveErr != nil {
-			log.Println("Error while deactivating "+strconv.Itoa(d.activeSave.Data.Id))
+			log.Println("Error while deactivating " + strconv.Itoa(d.activeSave.Data.Id))
 			log.Println(moveErr)
 			return
 		}
@@ -527,7 +528,7 @@ func (d *Display) onActivateChecked(checkState int) {
 			d.saveVersioner.Exit()
 		}
 		d.saveVersioner = nil
-		log.Println("Deactivated "+strconv.Itoa(d.activeSave.Data.Id))
+		log.Println("Deactivated " + strconv.Itoa(d.activeSave.Data.Id))
 		d.activeSave = nil
 	case 2:
 		if d.activeSave != nil && d.selectedSave != nil && *d.activeSave == *d.selectedSave && d.saveVersioner != nil {
@@ -538,7 +539,7 @@ func (d *Display) onActivateChecked(checkState int) {
 			// deactivate old activate save
 			moveErr := d.activeSave.MoveToId()
 			if moveErr != nil {
-				log.Println("Error while deactivating "+strconv.Itoa(d.activeSave.Data.Id))
+				log.Println("Error while deactivating " + strconv.Itoa(d.activeSave.Data.Id))
 				log.Println(moveErr)
 				return
 			}
@@ -548,7 +549,7 @@ func (d *Display) onActivateChecked(checkState int) {
 			d.activeSave = d.selectedSave
 			moveErr := d.activeSave.MoveToFirst()
 			if moveErr != nil {
-				log.Println("Error while activating "+strconv.Itoa(d.activeSave.Data.Id))
+				log.Println("Error while activating " + strconv.Itoa(d.activeSave.Data.Id))
 				log.Println(moveErr)
 				return
 			}
@@ -557,13 +558,13 @@ func (d *Display) onActivateChecked(checkState int) {
 			}
 			sv, svErr := NewSaveVersioner(d.activeSave)
 			if svErr != nil {
-				log.Println("Error creating SaveVersioner for save "+strconv.Itoa(d.activeSave.Data.Id))
+				log.Println("Error creating SaveVersioner for save " + strconv.Itoa(d.activeSave.Data.Id))
 				log.Println(svErr)
 				return
 			}
 			d.saveVersioner = sv
 			d.saveVersioner.Start(GlobalConfig.SnapshotPeriod)
-			log.Println("Activated "+strconv.Itoa(d.activeSave.Data.Id))
+			log.Println("Activated " + strconv.Itoa(d.activeSave.Data.Id))
 		} else {
 			log.Println("Selected save is nil, activation failed")
 		}
@@ -574,7 +575,7 @@ func (d *Display) onMoveToButtonClicked(bool) {
 	if d.selectedSave == nil {
 		return
 	}
-	log.Println("Moving save "+strconv.Itoa(d.selectedSave.Data.Id))
+	log.Println("Moving save " + strconv.Itoa(d.selectedSave.Data.Id))
 	if d.selectedSave == d.activeSave {
 		d.activeSave = nil
 		d.selectedSave.MoveToId()
@@ -583,26 +584,26 @@ func (d *Display) onMoveToButtonClicked(bool) {
 	case BUILD_MODE:
 		moveErr := d.selectedSave.Move(d.saveHandler.PlaySaveFolderPath(d.selectedSave.Data.Id))
 		if moveErr != nil {
-			log.Println("Error while moving "+strconv.Itoa(d.selectedSave.Data.Id))
+			log.Println("Error while moving " + strconv.Itoa(d.selectedSave.Data.Id))
 			log.Println(moveErr)
 			return
 		}
 		selIndex := d.saveSelector.CurrentIndex()
-		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, d.saveHandler.BuildSaves[selIndex]) // add to playsaves
+		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves, d.saveHandler.BuildSaves[selIndex])                    // add to playsaves
 		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves[:selIndex], d.saveHandler.BuildSaves[selIndex+1:]...) // remove from buildsaves
-		d.modeTab.SetCurrentIndex(PLAY_MODE) // toggle to other mode to keep showing selected save
+		d.modeTab.SetCurrentIndex(PLAY_MODE)                                                                             // toggle to other mode to keep showing selected save
 		// propagation calls d.onModeTabChanged(PLAY_MODE)
 	case PLAY_MODE:
 		moveErr := d.selectedSave.Move(d.saveHandler.BuildSaveFolderPath(d.selectedSave.Data.Id))
 		if moveErr != nil {
-			log.Println("Error while moving "+strconv.Itoa(d.selectedSave.Data.Id))
+			log.Println("Error while moving " + strconv.Itoa(d.selectedSave.Data.Id))
 			log.Println(moveErr)
 			return
 		}
 		selIndex := d.saveSelector.CurrentIndex()
-		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, d.saveHandler.PlaySaves[selIndex]) // add to playsaves
+		d.saveHandler.BuildSaves = append(d.saveHandler.BuildSaves, d.saveHandler.PlaySaves[selIndex])                // add to playsaves
 		d.saveHandler.PlaySaves = append(d.saveHandler.PlaySaves[:selIndex], d.saveHandler.PlaySaves[selIndex+1:]...) // remove from buildsaves
-		d.modeTab.SetCurrentIndex(BUILD_MODE) // toggle to other mode to keep showing selected save
+		d.modeTab.SetCurrentIndex(BUILD_MODE)                                                                         // toggle to other mode to keep showing selected save
 		// propagation calls d.onModeTabChanged(BUILD_MODE)
 	}
 	if d.activeSave == nil && len(*d.activeSaves) > 0 {
@@ -610,9 +611,9 @@ func (d *Display) onMoveToButtonClicked(bool) {
 		d.activeSave.MoveToFirst()
 	}
 	// re-select save
-	d.saveSelector.SetCurrentIndex(len(*d.activeSaves)-1)
+	d.saveSelector.SetCurrentIndex(len(*d.activeSaves) - 1)
 	//d.onSaveSelectedChanged(len(*d.activeSaves)-1)
-	log.Println("Save moved to "+strconv.Itoa(d.activeMode))
+	log.Println("Save moved to " + strconv.Itoa(d.activeMode))
 }
 
 func (d *Display) onVersionsButtonClicked(bool) {
@@ -656,7 +657,7 @@ func (d *Display) checkForUpdates() {
 	}
 	log.Println("Update available", IsOutOfDate)
 	if IsOutOfDate {
-		log.Println("New update download link "+DownloadURL)
+		log.Println("New update download link " + DownloadURL)
 		if GlobalConfig.AutoInstall {
 			downloadRXSMUpdateQuiet()
 		}
@@ -665,7 +666,7 @@ func (d *Display) checkForUpdates() {
 
 // end Display
 
-func makeSelectorOptions(saves []Save) ([]string) {
+func makeSelectorOptions(saves []Save) []string {
 	var result []string
 	for _, s := range saves {
 		result = append(result, s.Data.Name)
