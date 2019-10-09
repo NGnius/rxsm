@@ -16,7 +16,7 @@ import (
 const (
 	GameStart     = "Game_"
 	GameDataFile  = "GameData.json"
-	GameSaveFile  = "GameSave.RCX"
+	GameSaveFile  = "GameSave.GC"
 	ThumbnailFile = "Thumbnail.jpg"
 	FirstFolder   = "!!!Game_00"
 )

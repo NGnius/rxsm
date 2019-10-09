@@ -39,7 +39,7 @@ func Export(path string, save Save) error {
 	if dataWriteErr != nil {
 		return dataWriteErr
 	}
-	// create & write GameSave.RCX
+	// create & write GameSave.GC
 	saveData, saveReadErr := readAllFromPath(save.SavePath())
 	if saveReadErr != nil {
 		return saveReadErr
@@ -126,7 +126,7 @@ func extractSaveWorker(outFolder string, fileMap map[string]*zip.File, outChan c
 		outChan <- nil
 		return
 	}
-	// extract GameSave.RCX
+	// extract GameSave.GC
 	gameSaveSrc, sOpenErr := fileMap[GameSaveFile].Open() // assume exists
 	defer gameSaveSrc.Close()
 	if sOpenErr != nil {
