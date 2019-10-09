@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	RXSMVersion        string = "v2.0.0"
+	RXSMVersion        string = "v2.0.0a"
 	RXSMPlatformStream string = "release"
-	UpdateSteps        int    = 2
+	UpdateSteps        int    = 4
 	DownloadTempFile          = "rxsm-update.zip"
 )
 
@@ -129,7 +129,7 @@ func downloadRXSMUpdateQuiet() {
 }
 
 func downloadRXSMUpdate(statusCallback func(progress int, description string)) {
-	statusCallback(0, "Downloading")
+	statusCallback(1, "Downloading")
 	log.Println("Downloading update from " + DownloadURL)
 	f, createErr := os.Create(DownloadTempFile)
 	if createErr != nil {
@@ -145,19 +145,21 @@ func downloadRXSMUpdate(statusCallback func(progress int, description string)) {
 		statusCallback(-1, "Download failed")
 		return
 	}
-	statusCallback(1, "Installing Updater")
+	statusCallback(2, "Installing Updater")
 	f.Sync()
 	f.Seek(0, 0)
 	fStat, statErr := f.Stat()
 	if statErr != nil {
 		log.Println("Error getting download temp file stat")
 		log.Println(statErr)
+		statusCallback(-1, "Installing failed")
 		return
 	}
 	zipFile, zipErr := zip.NewReader(f, fStat.Size())
 	if zipErr != nil {
 		log.Println("Error creating zip reader")
 		log.Println(zipErr)
+		statusCallback(-1, "Installing failed")
 		return
 	}
 	for _, f := range zipFile.File {
@@ -170,10 +172,12 @@ func downloadRXSMUpdate(statusCallback func(progress int, description string)) {
 				updaterFilename = "rxsm-updater"
 			}
 			if len(filename) >= len(updaterFilename) && filename[:len(updaterFilename)] == updaterFilename {
+				statusCallback(3, "Extracting Updater")
 				fileReadCloser, openErr := f.Open()
 				if openErr != nil {
 					log.Println("Error opening updater in zip archive")
 					log.Println(openErr)
+					statusCallback(-1, "Extracting failed")
 					return
 				}
 				defer fileReadCloser.Close()
@@ -181,6 +185,7 @@ func downloadRXSMUpdate(statusCallback func(progress int, description string)) {
 				if createErr != nil {
 					log.Println("Error creating updater file")
 					log.Println(createErr)
+					statusCallback(-1, "Extracting failed")
 					return
 				}
 				defer destFile.Close()
@@ -188,6 +193,7 @@ func downloadRXSMUpdate(statusCallback func(progress int, description string)) {
 				if copyErr != nil {
 					log.Println("Error copying/extracting updater")
 					log.Println(copyErr)
+					statusCallback(-1, "Extracting failed")
 					return
 				}
 			}

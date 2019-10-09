@@ -344,7 +344,6 @@ func (sd *SettingsDialog) syncBackRXSMSettings() {
 }
 
 func (sd *SettingsDialog) onUpdateButtonClicked(bool) {
-	// TODO: implement
 	if !IsOutOfDate {
 		go func() {
 			sd.updateProgressBar.SetFormat("Checking for Update")
@@ -356,6 +355,9 @@ func (sd *SettingsDialog) onUpdateButtonClicked(bool) {
 			if IsOutOfDate {
 				sd.updateProgressBar.SetFormat("Update available")
 				sd.updateButton.SetText("Install Update")
+			} else {
+				sd.updateProgressBar.SetFormat("Up to Date")
+				sd.updateButton.SetText("Up to Date (Check Again)")
 			}
 			sd.updateProgressBar.Hide()
 		}()
@@ -368,6 +370,7 @@ func (sd *SettingsDialog) onUpdateButtonClicked(bool) {
 				sd.updateProgressBar.SetFormat(text + " - %p%")
 				if i == -1 {
 					success = false
+					sd.updateButton.SetText(text+" (Try Again)")
 					return
 				}
 				sd.updateProgressBar.SetValue(i)

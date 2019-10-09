@@ -9,7 +9,7 @@
   "force-unique-ids?": true,
   "icon-pack": "resources/exmods-icons/assets",
   "snapshot-period": 0,
-  "version": "v1.1.0",
+  "version": "v2.0.0a",
   "update-server": "https://rxsm-update.exmods.org",
   "automatically-check-for-updates?": true,
   "automatically-install-updates?": false,
