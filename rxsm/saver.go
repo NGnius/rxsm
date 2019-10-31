@@ -183,9 +183,9 @@ func (s *Save) Duplicate(newFolder string, id int) (newSave Save, err error) {
 	}
 	UsedIds.add(id)
 	toDuplicate := [][]string{ // { {source, dest}, ...}
-		[]string{s.dataPath, filepath.Join(newFolder, GameDataFile)},
-		[]string{s.savePath, filepath.Join(newFolder, GameSaveFile)},
-		[]string{s.thumbnailPath, filepath.Join(newFolder, ThumbnailFile)}}
+		{s.dataPath, filepath.Join(newFolder, GameDataFile)},
+		{s.savePath, filepath.Join(newFolder, GameSaveFile)},
+		{s.thumbnailPath, filepath.Join(newFolder, ThumbnailFile)}}
 	for _, dupPair := range toDuplicate {
 		src, openErr := os.Open(dupPair[0])
 		defer src.Close()

@@ -44,6 +44,8 @@ type Display struct {
 	activeSave             *Save
 	activeMode             int
 	activeSaves            *[]Save
+	filteredSaves          []Save
+	filterMapping          map[int]int
 	saveHandler            SaveHandler
 	saveVersioner          ISaveVersioner
 	exitStatus             int
@@ -51,31 +53,37 @@ type Display struct {
 	temporaryThumbnailPath string
 	endChan                chan int
 	// Qt GUI objects
-	window            *widgets.QMainWindow
-	app               *widgets.QApplication
-	modeTab           *widgets.QTabBar
-	settingsButton    *widgets.QPushButton
-	settingsIcon      *gui.QIcon
-	importButton      *widgets.QPushButton
-	exportButton      *widgets.QPushButton
-	saveSelector      *widgets.QComboBox
-	copySaveButton    *widgets.QPushButton
-	newSaveButton     *widgets.QPushButton
-	nameField         *widgets.QLineEdit
-	creatorLabel      *widgets.QLabel
-	creatorField      *widgets.QLineEdit
-	thumbnailImage    *gui.QIcon
-	thumbnailButton   *widgets.QPushButton
-	idLabel           *widgets.QLabel
-	descriptionLabel  *widgets.QLabel
-	descriptionField  *widgets.QPlainTextEdit
-	saveButton        *widgets.QPushButton
-	cancelButton      *widgets.QPushButton
-	activateCheckbox  *widgets.QCheckBox
-	moveButton        *widgets.QPushButton
-	versionsButton    *widgets.QPushButton
-	installPathDialog *InstallPathDialog
-	settingsDialog    *SettingsDialog
+	window               *widgets.QMainWindow
+	app                  *widgets.QApplication
+	modeTab              *widgets.QTabBar
+	settingsButton       *widgets.QPushButton
+	settingsIcon         *gui.QIcon
+	importButton         *widgets.QPushButton
+	exportButton         *widgets.QPushButton
+	selectionTabWidget   *widgets.QTabWidget
+	saveSelector         *widgets.QComboBox
+	copySaveButton       *widgets.QPushButton
+	newSaveButton        *widgets.QPushButton
+	filteredSaveSelector *widgets.QComboBox
+	resetFilterButton    *widgets.QPushButton
+	applyFilterButton    *widgets.QPushButton
+	filterTypeSelector   *widgets.QComboBox
+	filterSearchField    *widgets.QLineEdit
+	nameField            *widgets.QLineEdit
+	creatorLabel         *widgets.QLabel
+	creatorField         *widgets.QLineEdit
+	thumbnailImage       *gui.QIcon
+	thumbnailButton      *widgets.QPushButton
+	idLabel              *widgets.QLabel
+	descriptionLabel     *widgets.QLabel
+	descriptionField     *widgets.QPlainTextEdit
+	saveButton           *widgets.QPushButton
+	cancelButton         *widgets.QPushButton
+	activateCheckbox     *widgets.QCheckBox
+	moveButton           *widgets.QPushButton
+	versionsButton       *widgets.QPushButton
+	installPathDialog    *InstallPathDialog
+	settingsDialog       *SettingsDialog
 }
 
 func NewDisplay(saveHandler SaveHandler) *Display {
@@ -131,18 +139,69 @@ func (d *Display) Run() {
 	d.exportButton.SetToolTip("Export selected save to a zip file")
 	d.exportButton.ConnectClicked(d.onExportButtonClicked)
 
+	// select tab
+	selectionLabel := widgets.NewQLabel2("Select a save...", nil, 0)
+	// selectionLabel.SetSizePolicy2(4, 4) // shrink; don't get bigger
 	d.saveSelector = widgets.NewQComboBox(nil)
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
 	d.saveSelector.SetToolTip("Selected save")
 	d.saveSelector.ConnectCurrentIndexChanged(d.onSaveSelectedChanged)
 	d.copySaveButton = widgets.NewQPushButton2("Copy", nil)
-	d.copySaveButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, CopyIconPath)))
+	d.copySaveButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, ActiveIconPath)))
 	d.copySaveButton.SetToolTip("Duplicate the selected save")
 	d.copySaveButton.ConnectClicked(d.onCopySaveButtonClicked)
 	d.newSaveButton = widgets.NewQPushButton2("New", nil)
 	d.newSaveButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, NewIconPath)))
 	d.newSaveButton.SetToolTip("Create a new save, using default_save")
 	d.newSaveButton.ConnectClicked(d.onNewSaveButtonClicked)
+
+	selectorMasterWidget := widgets.NewQWidget(nil, 0)
+	selectionLayout := widgets.NewQGridLayout2()
+	selectionLayout.AddWidget2(selectionLabel, 0, 0, 0)
+	selectionLayout.AddWidget3(d.saveSelector, 1, 0, 1, 2, 0)
+	selectionLayout.AddWidget3(d.newSaveButton, 2, 0, 1, 1, 0)
+	selectionLayout.AddWidget3(d.copySaveButton, 2, 1, 1, 1, 0)
+	selectionLayout.AddWidget3(d.importButton, 3, 0, 1, 1, 0)
+	selectionLayout.AddWidget3(d.exportButton, 3, 1, 1, 1, 0)
+	selectorMasterWidget.SetLayout(selectionLayout)
+
+	// filter tab
+	filterLabel := widgets.NewQLabel2("Find a save...", nil, 0)
+	d.filteredSaveSelector = widgets.NewQComboBox(nil)
+	d.filteredSaveSelector.SetToolTip("Filtered save results")
+	d.filteredSaveSelector.ConnectCurrentIndexChanged(d.onFilterSaveSelectedChanged)
+	d.applyFilterButton = widgets.NewQPushButton2("Apply", nil)
+	d.applyFilterButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, ActiveIconPath)))
+	d.applyFilterButton.SetToolTip("Search according to the filter")
+	d.applyFilterButton.ConnectClicked(d.onApplyFilterButtonClicked)
+	d.resetFilterButton = widgets.NewQPushButton2("Reset", nil)
+	d.resetFilterButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, CancelIconPath)))
+	d.resetFilterButton.SetToolTip("Reset search filter")
+	d.resetFilterButton.ConnectClicked(d.onResetFilterButtonClicked)
+	d.filterTypeSelector = widgets.NewQComboBox(nil)
+	d.filterTypeSelector.AddItems([]string{"Any", "Name", "Creator", "Description", "ID"})
+	d.filterTypeSelector.SetToolTip("Parameter matching method")
+	d.filterSearchField = widgets.NewQLineEdit(nil)
+	d.filterSearchField.SetToolTip("Parameter to search for")
+
+	filterMasterWidget := widgets.NewQWidget(nil, 0)
+	filterLayout := widgets.NewQGridLayout2()
+	filterLayout.AddWidget2(filterLabel, 0, 0, 0)
+	filterLayout.AddWidget3(d.filterTypeSelector, 1, 0, 1, 1, 0)
+	filterLayout.AddWidget3(d.filterSearchField, 1, 1, 1, 8, 0)
+	filterLayout.AddWidget3(d.applyFilterButton, 2, 0, 1, 5, 0)
+	filterLayout.AddWidget3(d.resetFilterButton, 2, 5, 1, 4, 0)
+	filterLayout.AddWidget3(d.filteredSaveSelector, 3, 0, 1, 9, 0)
+
+	filterMasterWidget.SetLayout(filterLayout)
+
+	// selection tab widget init
+	d.selectionTabWidget = widgets.NewQTabWidget(nil)
+	d.selectionTabWidget.SetTabPosition(2) // west
+	//d.selectionTabWidget.SetSizePolicy2(1, 4) // shrink vertical
+	d.selectionTabWidget.AddTab(selectorMasterWidget, "Load")
+	d.selectionTabWidget.AddTab(filterMasterWidget, "Find")
+	d.onResetFilterButtonClicked(false)
 
 	d.nameField = widgets.NewQLineEdit(nil)
 	d.creatorLabel = widgets.NewQLabel2("by", nil, 0)
@@ -169,7 +228,7 @@ func (d *Display) Run() {
 	d.cancelButton.ConnectClicked(d.onCancelButtonClicked)
 	d.activateCheckbox = widgets.NewQCheckBox2("Activated", nil)
 	d.activateCheckbox.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, ActiveIconPath)))
-	d.activateCheckbox.SetToolTip("Make RobocraftX load the selected save")
+	d.activateCheckbox.SetToolTip("Since Experiment 9, this has no effect")
 	d.activateCheckbox.ConnectStateChanged(d.onActivateChecked)
 	d.moveButton = widgets.NewQPushButton2("Toggle Location", nil)
 	d.moveButton.SetIcon(gui.NewQIcon5(filepath.Join(GlobalConfig.IconPackPath, ToggleIconPath)))
@@ -188,14 +247,7 @@ func (d *Display) Run() {
 	headerLayout := widgets.NewQGridLayout2()
 	headerLayout.AddWidget3(d.modeTab, 0, 0, 1, 8, 0)
 	headerLayout.AddWidget2(d.settingsButton, 0, 8, 0)
-	headerLayout.AddWidget3(d.saveSelector, 1, 0, 1, 7, 0)
-	//headerLayout.AddWidget3(d.copySaveButton, 1, 4, 1, 1, 0)
-	headerLayout.AddWidget3(d.newSaveButton, 1, 7, 1, 2, 0)
-
-	portLayout := widgets.NewQGridLayout2()
-	portLayout.AddWidget2(d.importButton, 0, 0, 0)
-	portLayout.AddWidget2(d.exportButton, 0, 1, 0)
-	portLayout.AddWidget2(d.copySaveButton, 0, 2, 0)
+	headerLayout.AddWidget3(d.selectionTabWidget, 1, 0, 1, 9, 0)
 
 	infoLayout := widgets.NewQGridLayout2()
 	infoLayout.AddWidget3(d.activateCheckbox, 0, 0, 1, 3, 0x0004)
@@ -217,10 +269,10 @@ func (d *Display) Run() {
 
 	masterLayout := widgets.NewQGridLayout2()
 	masterLayout.AddLayout(headerLayout, 0, 0, 0)
-	masterLayout.AddLayout(portLayout, 1, 0, 0)
-	masterLayout.AddLayout(infoLayout, 2, 0, 0)
-	masterLayout.AddLayout(descriptionLayout, 3, 0, 0)
-	masterLayout.AddLayout(bottomButtons, 4, 0, 0)
+	//masterLayout.AddLayout(portLayout, 1, 0, 0)
+	masterLayout.AddLayout(infoLayout, 1, 0, 0)
+	masterLayout.AddLayout(descriptionLayout, 2, 0, 0)
+	masterLayout.AddLayout(bottomButtons, 3, 0, 0)
 
 	centralWidget := widgets.NewQWidget(d.window, 0)
 	centralWidget.SetLayout(masterLayout)
@@ -340,6 +392,7 @@ func (d *Display) onModeTabChanged(tabIndex int) {
 	d.saveSelector.Clear()
 	d.saveSelector.AddItems(makeSelectorOptions(*d.activeSaves))
 	// propagation calls d.onSaveSelectedChanged(d.saveSelector.CurrentIndex())
+	d.onResetFilterButtonClicked(false)
 	log.Println("Switched to mode " + strconv.Itoa(d.activeMode))
 }
 
@@ -411,6 +464,67 @@ func (d *Display) onNewSaveButtonClicked(bool) {
 	// select newly created save
 	d.saveSelector.SetCurrentIndex(len(*d.activeSaves) - 1)
 	// propagation calls d.onSaveSelectedChanged(len(*d.activeSaves)-1)
+}
+
+func (d *Display) onApplyFilterButtonClicked(bool) {
+	log.Println("Applying save filter")
+	isMatch := func (search string, s Save) bool{return false}
+	switch d.filterTypeSelector.CurrentIndex(){
+	case 0: // "Any"
+		isMatch = isAnyMatch
+	case 1: // "Name"
+		isMatch = isNameMatch
+	case 2: // "Creator"
+		isMatch = isCreatorMatch
+	case 3: // "Description"
+		isMatch = isDescriptionMatch
+	case 4: // "ID"
+		isMatch = isIDMatch
+	}
+	resultChan := make(chan int)
+	doMatch := func (search string, s Save, arrayLoc int) {
+		if isMatch(search, s) {
+			resultChan <- arrayLoc
+		} else {
+			resultChan <- -1
+		}
+	}
+	searchString := d.filterSearchField.Text()
+	for i, save := range d.filteredSaves {
+		go doMatch(searchString, save, i)
+	}
+	oldFilterLen := len(d.filteredSaves)
+	newFilteredSaves := []Save{}
+	newFilterMapping := make(map[int]int)
+	for j:=0; j < oldFilterLen; j++ {
+		oldLoc := <- resultChan
+		if oldLoc != -1 {
+			newFilteredSaves = append(newFilteredSaves, d.filteredSaves[oldLoc])
+			newFilterMapping[len(newFilteredSaves)-1] = d.filterMapping[oldLoc]
+		}
+	}
+	d.filteredSaves = newFilteredSaves
+	d.filterMapping = newFilterMapping
+	// refill dropdown
+	d.filteredSaveSelector.Clear()
+	d.filteredSaveSelector.AddItems(makeSelectorOptions(d.filteredSaves))
+}
+
+func (d *Display) onResetFilterButtonClicked(bool) {
+	log.Println("Reseting save filter")
+	d.filteredSaves = *d.activeSaves
+	// build mapping
+	d.filterMapping = make(map[int]int)
+	for i:=0; i < len(d.filteredSaves); i++ {
+		d.filterMapping[i] = i
+	}
+	// refill dropdown
+	d.filteredSaveSelector.Clear()
+	d.filteredSaveSelector.AddItems(makeSelectorOptions(d.filteredSaves))
+}
+
+func (d *Display) onFilterSaveSelectedChanged(index int) {
+	d.saveSelector.SetCurrentIndex(d.filterMapping[index])
 }
 
 func (d *Display) onSettingsButtonClicked(bool) {

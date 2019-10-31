@@ -370,7 +370,7 @@ func (sd *SettingsDialog) onUpdateButtonClicked(bool) {
 				sd.updateProgressBar.SetFormat(text + " - %p%")
 				if i == -1 {
 					success = false
-					sd.updateButton.SetText(text+" (Try Again)")
+					sd.updateButton.SetText(text + " (Try Again)")
 					return
 				}
 				sd.updateProgressBar.SetValue(i)
